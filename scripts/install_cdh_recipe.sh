@@ -140,6 +140,8 @@ declare -a CM_AGENT_DIRS=(/var/log/cloudera-scm-agent \
 PARCEL_REPO_DIR=/opt/cloudera/parcel-repo
 PARCEL_DIR=/opt/cloudera/parcels
 
+EXTJS_URL= http://archive.cloudera.com/gplextras/misc/ext-2.2.zip
+
 # Tune kernel parameters
 # vm.swapiness setting
 VM_SWAPPINESS_VALUE=10
@@ -595,6 +597,14 @@ if [ ! -e /var/lib/oozie/mysql-connector-java.jar ]; then
    cp $TMP_DIR/mysql-connector-java-${MYSQL_JDBC_CONNECTOR_VERSION}/mysql-connector-java-${MYSQL_JDBC_CONNECTOR_VERSION}-bin.jar /var/lib/oozie/mysql-connector-java.jar
    chmod 644 /var/lib/oozie/mysql-connector-java.jar
    chown $CM_USER:$CM_USER /var/lib/oozie/mysql-connector-java.jar
+   log_msg "info: installing ExtJS for Oozie..."
+   wget EXTJS_URL
+   if [ "$?" -eq 0 ]; then
+      $JDK_INSTALL_DIR/$JDK_TOP_DIR/bin/jar xvf ext-*.zip 
+      chown -R $CM_USER:$CM_USER ext*
+   else
+      log_msg "warn: Error downloading ExtJS for Ooozie. Th Oozie Web Console will not work until ExtJS is installed"
+   fi 
    popd
 fi
 fi # if [ "$CLOUDERA_AGENT" -eq 1 ]; then
