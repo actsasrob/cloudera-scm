@@ -98,6 +98,8 @@ declare -a CM_DIRS=(/var/log/cloudera-scm-headlamp \
 /var/lib/cloudera-host-monitor \
 /var/lib/cloudera-service-monitor \
 /opt/cm \    # Top-level dir for services that need a data dir
+/var/log/hbase \
+/var/log/hbase/audit \
 )
 
 declare -a CM_AGENT_DIRS=(/var/log/cloudera-scm-agent \
@@ -135,6 +137,8 @@ declare -a CM_AGENT_DIRS=(/var/log/cloudera-scm-agent \
 /opt/cm \    # Top-level dir for services that need a data dir
 /etc/hadoop \
 /etc/hive \
+/var/log/hbase \
+/var/log/hbase/audit \
 )
 
 PARCEL_REPO_DIR=/opt/cloudera/parcel-repo
