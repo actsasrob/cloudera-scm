@@ -19,7 +19,9 @@ Various gists and scripts related to installing/configuring/operating Cloudera M
 Run the script as root. Here are some sample variations:
 
 CLOUDERA_AGENT=0 ./install_cdh_recipe.sh    # Install Cloudera Manager Server components. No agent components. Suitable for main Cloudera Manager Server.
+
 CLOUDERA_SERVER=0 ./install_cdh_recipe.sh   # Install agent components. No Server components. Suitable for a CDH datanode.
+
 CM_SERVER_HOSTNAME=myserver TMP_DIR=/opt/download ./install_cdh_recipe.sh    # Install both Server and Agent software. Change name of Cloudera Manager server to myserver (default is scm1). Change download location to /opt/download (default is /tmp/tmpcdh).
 
 See the contents of the script for additional variables that can be overriden.
