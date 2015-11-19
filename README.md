@@ -26,4 +26,4 @@ CM_SERVER_HOSTNAME=myserver TMP_DIR=/opt/download ./install_cdh_recipe.sh    # I
 
 See the contents of the script for additional variables that can be overriden.
 
-The install has only been tested on CentOS6 using the single-user mode install.
+*The install has only been tested on CentOS6 using the single-user mode install.*
