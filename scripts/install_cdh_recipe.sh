@@ -7,7 +7,7 @@ SINGLE_USER_MODE=${SINGLE_USER_MODE:-1} # Use common user for Cloudera Agent/Ser
 DISABLE_IPTABLES=${DISABLE_IPTABLES:-1} # Disable iptables: 0=No, 1=Yes
 DISABLE_SELINUX=${DISABLE_SELINUX:-1}   # Disable selinux: 0=No, 1=Yes
 
-TMP_DIR=/tmp/tmpcdh
+TMP_DIR=/opt/tmpcdh
 PACKAGE_MGR_INSTALL="yum install -y "
 
 # Oracle JDK Download Info
@@ -34,9 +34,8 @@ MYSQL_USER=mysql
 MYSQL_ROOT_USER=root
 MYSQL_ROOT_PASSWORD="mysqlpassword"
 MYSQL_JDBC_CONNECTOR_VERSION=5.1.35
-MYSQL_JDBC_CONNECTOR_MD5SUM=
-#MYSQL_JDBC_CONNECTOR_VERSION=5.1.36
-#MYSQL_JDBC_CONNECTOR_MD5SUM="9a06f655da5d533a3c1b2565b76306c7"
+MYSQL_JDBC_CONNECTOR_MD5SUM="e59c9438a9c6c07e27252ad3156123ca" # 5.1.35
+#MYSQL_JDBC_CONNECTOR_MD5SUM="9a06f655da5d533a3c1b2565b76306c7" # 5.1.36
 
 # Variables used to create various databases
 ACTIVITY_MONITOR_DB="${ACTIVITY_MONITOR_DB:-amon}"
@@ -102,6 +101,15 @@ declare -a CM_DIRS=(/var/log/cloudera-scm-headlamp \
 /opt/cm \    # Top-level dir for services that need a data dir
 /var/log/hbase \
 /var/log/hbase/audit \
+/impala/impalad \
+/var/lib/impala \
+/var/lib/impala/udfs \
+/var/log/catalogd \
+/var/log/impalad \
+/var/log/statestore \
+/var/log/impalad/audit \
+/var/log/impalad/lineage \
+/var/log/impala-llama \
 )
 
 declare -a CM_AGENT_DIRS=(/var/log/cloudera-scm-agent \
@@ -141,12 +149,21 @@ declare -a CM_AGENT_DIRS=(/var/log/cloudera-scm-agent \
 /etc/hive \
 /var/log/hbase \
 /var/log/hbase/audit \
+/impala/impalad \
+/var/lib/impala \
+/var/lib/impala/udfs \
+/var/log/catalogd \
+/var/log/impalad \
+/var/log/statestore \
+/var/log/impalad/audit \
+/var/log/impalad/lineage \
+/var/log/impala-llama \
 )
 
 PARCEL_REPO_DIR=/opt/cloudera/parcel-repo
 PARCEL_DIR=/opt/cloudera/parcels
 
-EXTJS_URL= http://archive.cloudera.com/gplextras/misc/ext-2.2.zip
+EXTJS_URL=http://archive.cloudera.com/gplextras/misc/ext-2.2.zip
 
 # Tune kernel parameters
 # vm.swapiness setting
