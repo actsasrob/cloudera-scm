@@ -201,7 +201,7 @@ Disable Transparent Huge Page compaction
  echo never > defrag_file_pathname
 
 Configure ntp daemon across cluster. More important for synchronized clocks across servers than setting correct time.
-Disable IPv6 (really just don’t disable IPv4).
+Disable IPv6 (really just don't disable IPv4).
 
 
 Filesystem Considerations:
