@@ -34,10 +34,10 @@ tcpdump -i eth1 # Capture only on interface eth1
 tcpdump -w file.pcap # Capture packets to file file.pcap
 tcpdump -r file.cap  # Read from file file.pcap.
 tcpdump -l  # Make stdout line buffered.  Useful if you want to see the data while capturing it.  E.g.,
-               "tcpdump  -l  |  tee dat’’ or ‘‘tcpdump  -l   > dat  &  tail  -f  dat".
-tcpdump -n  # Don’t convert host addresses to names.  This can be used to avoid DNS lookups.
-tcpdump -nn # Don’t convert protocol and port numbers etc. to names either.
-       -t     Don’t print a timestamp on each dump line.
+               "tcpdump  -l  |  tee dat" or "tcpdump  -l   > dat  &  tail  -f  dat".
+tcpdump -n  # Don't convert host addresses to names.  This can be used to avoid DNS lookups.
+tcpdump -nn # Don't convert protocol and port numbers etc. to names either.
+       -t     Don't print a timestamp on each dump line.
        -tt    Print an unformatted timestamp on each dump line.
        -ttt   Print a delta (micro-second resolution) between current and previous line on each dump line.
        -tttt  Print a timestamp in default format proceeded by date on each dump line.
