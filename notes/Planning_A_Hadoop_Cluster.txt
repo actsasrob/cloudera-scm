@@ -1,0 +1,285 @@
+
+
+Important that at least one copy of the NameNode's metadata is stored on a separate machine in case of catastrophic failure.
+-Or use JournalNode quorum (odd number. Three or greater).
+
+
+
+WORKER NODES:
+
+Typical configurations for worker nodes
+
+ Midline  deep storage, 1Gb Ethernet (today ideally 10Gb Ethernet)
+  16 x 3TB SATA II hard drives, in a non-RAID, JBOD* configuraGon
+  1 or 2 of the 16 drives for the OS, with RAID-1 mirroring
+  2 x 6-core 2.9GHz CPUs, 15MB cache
+  256GB RAM
+  2x1 Gigabit Ethernet
+
+ High-end  high memory, spindle dense, 10Gb Ethernet
+  24 x 1TB Nearline/MDL SAS hard drives, in a non-RAID, JBOD* configuraGon
+  2 x 6-core 2.9GHz CPUs, 15MB cache
+  512GB RAM (or more)
+  1x10 Gigabit Ethernet
+
+
+Worker Nodes - CPU capacity considerations:
+
+Hex- and octo-core CPUs are commonly available
+Hyper-threading and quick-path interconnect (QPI) should be enabled
+Hadoop nodes are typically disk- and network-I/O bound
+ Therefore, top-of-the-range CPUs are usually not necessary
+Some types of Hadoop jobs do make heavy use of CPU resources
+
+ Clustering and classification
+ Complex text mining
+ Natural language processing
+ Feature extraction
+ Image manipulation
+
+You might need more processing power on your worker nodes if your specific workload requires it.
+
+Rule of thumb:
+Total number of tasks = Number of physical processor cores minus one
+ This is a starting point, and should not be taken as a definitive setting for all clusters
+
+
+Worker Nodes - RAM Considerations:
+
+
+Worker node configuraAon specifies the amount of memory and number of cores that Map tasks, Reduce tasks, and ApplicaAonMasters can use on that node
+
+Each Map and Reduce task typically takes 2GB to 4GB of RAM
+Each ApplicationMaster typically takes 1GB of RAM
+Worker nodes should not be using virtual memory
+
+  set 'vm.swappiness=1'. See http://blog.cloudera.com/blog/2015/01/how-to-deploy-apache-hadoop-clusters-like-a-boss.
+
+Ensure you have enough RAM to run all tasks, plus overhead for the DataNode and NodeManager daemons, plus the operating system
+
+New, memory-intensive processing frameworks are being deployed on many Hadoop clusters
+ Impala
+ Spark
+
+HDFS caching can also take advantage of extra RAM on worker nodes
+Good practice to equip your worker nodes with as much RAM as you can
+
+ Memory configurations up to 512GB per worker node are not unusual for workloads with high memory requirements
+
+
+Worker Nodes -- Disk
+
+Hadoop's architecture impacts disk space requirements
+ By default, HDFS data is replicated three times
+ Temporary data storage typically requires 20-30 percent of a cluster's raw disk capacity
+
+In general, more spindles (disks) is beeer
+ In practice, we see anywhere from four to 24 disks (or even more) per node
+Use 3.5" disks
+ Faster, cheaper, higher capacity than 2.5" disks
+7,200 RPM SATA/SATA II drives are fine
+ No need to buy 15,000 RPM drives
+8 x 1.5TB drives is likely to be better than 6 x 2TB drives
+ Different tasks are more likely to be accessing different disks
+
+A good practical maximum is 36TB per worker node
+ More than that will result in massive network traffic if a node dies and block re-replication must take place RecommendaAon: dedicate 1 disk for OS and logs, use the other disks for Hadoop data
+Mechanical hard drives currently provide a significantly btter cost/performance ratio than solid-state drives (SSDs)
+For hybrid clusters (both SSDs and HDDs), using SSDs for non-compressed intermediate shuffle data leads to significant performance gains
+Worker nodes do not benefit from using RAID* storage
+
+ HDFS provides built-in redundancy by replicating blocks across multiple nodes
+ RAID striping (RAID 0) is actually slower than the JBOD configurationused by HDFS
+ RAID 0 read and write operaGons are limited by the speed of the slowest disk in the RAID array
+ Disk operaGons on JBOD are independent, so the average speed is greater than that of the slowest disk
+ One test by Yahoo showed JBOD performing between 30% and 50% faster than RAID 0, depending on the operaGons being performed
+
+Blade servers are not recommended
+ Failure of a blade chassis results in many nodes being unavailable
+ Individual blades usually have very limited RAM and hard disk capacity
+ Network interconnection between the chassis and top-of-rack switch can become a boCleneck
+
+
+Configure the NameNode and ResourceManager for HA when running production workloads
+HttpFS should run on a gateway server for the cluster. Supports HDFS HA deployments.
+
+
+Master Node Hardware Recommendation:
+
+Carrier-class hardware
+Dual power supplies
+Dual Ethernet cards
+ Bonded to provide failover
+RAIDed hard drives (RAID 1). No real benefit to RAID boot/OS partition.
+Reasonable amount of RAM
+ 64 GB for clusters of 20 nodes or less
+ 96 GB for clusters of up to 300 nodes
+ 128 GB for larger clusters
+
+Network Considerations:
+
+Hadoop is very bandwidth-intensive!
+ Often, all nodes are communicating with each other at the same Gme
+Use dedicated switches for your Hadoop cluster
+Nodes are connected to a top-of-rack switch
+Nodes should be connected at a minimum speed of 1Gb/sec
+Consider 10Gb/sec connections in the following cases:
+ Clusters storing very large amounts of data
+ Clusters in which typical jobs produce large amounts of intermediate data
+
+Racks are interconnected via core switches
+Core switches should connect to top-of-rack switches at 10Gb/sec or faster
+Beware of oversubscripAon in top-of-rack and core switches
+Consider bonded Ethernet to mitigate against failure
+Consider redundant top-of-rack and core switches
+
+When configuring Hadoop, you will be required to identify various nodes in Hadoop's configuration files
+Use hostnames, not IP addresses, to identify nodes when configuring Hadoop
+
+DNS is preferred for hostname resolution (rather than /etc/hosts)
+- Use nscd to cache DNS lookups so that the Hadoop cluster does not saturate DNS servers.
+ Set hostnames to fully-qualified domain name (FQDN) (FQDN also needed for secure clusters using kerberos)
+ Each host must be able to:
+ Perform a forward lookup on its own hostname
+ Perform a reverse lookup using its own ip address
+Forward and reverse lookups must work correctly whether you are using DNS or /etc/hosts for name resoluAon
+ If the results do not match, major problems can occur
+
+
+OS Configuration:
+
+Increase the nofile ulimit for the cloudera-scm user to at least 32K
+ Cloudera Manager sets this to 32K in /usr/sbin/cmf-agent by default
+Disable IPv6 (really, don't disable IPv4)
+Disable SELinux if possible
+ Incurs a performance penalty on a Hadoop cluster
+ Configuration is non-trivial
+
+Install and configure the ntp daemon
+ Ensures the time on all nodes is synchronized (synchronized time is more important than accurate time)
+ Important for HBase, ZooKeeper, Kerberos
+ Useful when using logs to debug problems
+
+Cloudera Host Inspector will check for many OS settings.
+
+System Configuration:
+
+Do not use Linux's LVM (Logical Volume Manager) to make all your disks appear as a single volume
+ As with RAID 0, this limits speed to that of the slowest disk
+ Can also result in the loss of all data on the node if a single disk fails
+
+Check the machines' BIOS settings
+ BIOS settings may not be configured for optimal performance
+ For example, if you have SATA drives make sure IDE emulation is not enabled
+Test disk I/O speed with hdparm -t
+
+ Example:
+hdparm -t /dev/sda1
+ You should see speeds of 70MB/sec or more
+ Anything less is an indication of possible problems
+
+Reduce the swappiness of the system in /etc/sysctl.conf
+ Set vm.swappiness to 0 unless using RHEL kernel 2.6.32-303 or later
+- Set vm.swappiness to 1 if RHEL kernel 2.6.32-303 or later
+
+Hadoop has no specific disk partioning requirements
+ Use whatever partioning system makes sense to you
+
+Mount disks with the noatime option
+
+Disable Transparent Huge Page compaction
+ Can degrade the performance of Hadoop workloads
+ Open the defrag file of your OS to see if it is enabled
+ Red Hat/CentOS: /sys/kernel/mm/redhat_transparent_hugepage/defrag
+ Ubuntu/Debian, OEL, SLES: /sys/kernel/mm/transparent_hugepage/defrag
+ A line reading '[always] never' means it is enabled
+ A line reading '[never] always' means it is disabled
+
+ To temporarily disable it
+ sudo sh -c "echo 'never' > defrag_file_pathname"
+ Add the following to /etc/rc.local to persist the change
+ echo never > defrag_file_pathname
+
+Configure ntp daemon across cluster. More important for synchronized clocks across servers than setting correct time.
+Disable IPv6 (really just don’t disable IPv4).
+
+
+Filesystem Considerations:
+
+Cloudera recommends the ext3 and ext4 filesystems
+ ext4 is more commonly used on new clusters
+XFS provides some performance benefit during kickstart
+ It formats in 0 seconds, vs. several minutes for each disk with ext3/ext4
+Currently, more testing is done at Cloudera on ext4 than XFS
+
+
+Java Virtual Machine (JVM) Requirements:
+
+Always use the official Oracle JDK (http://java.com/)
+ Hadoop is complex software, and oeen exposes bugs in other JDK implementations
+Version 1.7 is required
+ CDH5 is certified with 1.7.0_55
+ Any later maintenance release should be acceptable for production
+ Refer to the CDH Release Notes for details
+CDH 5 does not support version 1.6
+
+Resources:
+
+http://blog.cloudera.com/blog/2015/01/how-to-deploy-apache-hadoop-clusters-like-a-boss/
+Read this before setting vm.swappiness=0:
+
+https://www.percona.com/blog/2014/04/28/oom-relation-vm-swappiness0-new-kernel/
+
+CDH Clusters On AWS:
+ Create Amazon instance in VPC, install Cloudera Director on instance
+ Launch Cloudera Director, Add Environment, add cluster(s)
+ Cloudera Director distributes CDH parcel
+Manage each Cloudera Director deployment with Cloudera Manager
+
+
+Cloudera Manager-generated CDH configuratoons
+ Deployed to /var/run/cloudera-scm/process subdirectories
+Cloudera Manager does not expose all CDH configurations
+ Reference for all CDH configurations:
+http://archive-primary.cloudera.com/cdh5/cdh/5/hadoop/
+ See documentation under the 'configuration menu at page bottom
+ When Cloudera Manager does not explicitly set a CDH property:
+ The default property value bundled with CDH will apply
+ These default settings are oaen stored in JAR files, for example in /opt/cloudera/parcels/CDH/lib/...
+
+
+Full list of ports used by components of CDH 5:
+ http://www.cloudera.com/content/cloudera/en/documentation/core/latest/topics/cdh_ig_ports_cdh5.html
+All ports used in a Cluster are listed in one location in Cloudera Manager
+ From the Cluster page's Configuration menu, choose 'All Port Configurations'
+
+
+New Daemons that HDFS HA introduces to the cluster
+ NameNode (active)
+ NameNode (standby)
+ Failover Controllers
+ Journal Nodes
+The Secondary NameNode is not used in an HDFS HA configuration
+Cloudera Manager configures HA using Quorum-based storage
+ Uses a quorum of JournalNodes
+ Each JournalNode maintains a local edits directory
+ That directory contains files detailing namespace metadata modifications
+With HA configured, automatic failover is also available
+ Cloudera Manager sets dfs.ha.automatic-failover.enabled to true for the NameNode role instances it configures for HA
+
+
+Cloudera Security Considerations:
+
+See the 'CDH Security Guide' for detailed instructions
+ Available at http://www.cloudera.com/content/cloudera/en/documentation/cdh5/v5-0-0/CDH5-Security-Guide/CDH5-Security-Guide.html
+ Be sure to read the guide corresponding to your version of CDH
+
+
+How-to: Set Up a Hadoop Cluster with Network Encryption
+http://blog.cloudera.com/blog/2013/03/how-to-set-up-a-hadoop-cluster-with-network-encryption/
+
+New in CDH 5.3: Transparent Encryption in HDFS
+http://blog.cloudera.com/blog/2015/01/new-in-cdh-5-3-transparent-encryption-in-hdfs/HDFS-6134 Data at Rest Encryption
+
+Transparent Encryption Support
+https://issues.apache.org/jira/secure/attachment/12660368/HDFSDataatRestEncryption.pdf

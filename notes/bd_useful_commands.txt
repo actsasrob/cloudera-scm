@@ -1,0 +1,91 @@
+
+Hadoop CLI:
+
+yarn application -list -appStates FINISHED # Get list of apps that have finished
+   Copy the application ID for the Spark application returned by the command above.
+   Now run this command (where appId is the actual application ID).
+yarn logs -applicationId <appId> | less
+
+sudo find /data/nn/ -name “*<BLK_ID>*”’ # Find actual file containing data block on DataNode
+                                        # NOTE: Assume file system prefix of /data/nn.
+
+
+Cloudera Hadoop/HDFS Logs:
+
+When YARN log aggregatoon is enabled: Container log files are moved from NodeManager hosts’
+/var/log/hadoop-yarn/container directories to HDFS when the application completes
+– Default HDFS directory: /tmp/logs
+MapReduce jobs produce the following logs:
+– ApplicationMaster log
+– stdout, stderr, and syslog output for each Map and Reduce task
+– Job configuration settings specified by the developer
+– Counters
+MapReduce Job History Server log directory Default: /var/log/hadoop-mapreduce
+
+tcpdump cheat sheet:
+tcpdump [ -AdDefIKlLnNOpqRStuUvxX ] [ expression ]
+
+sudo tcpdump -tttt -nn -l 'host scm1 and hadoop-01-01' # Only traffic between hosts scm1 and hadoop-01-01
+sudo tcpdump -tttt -nn -l 'host hadoop-01-01 and ( port 24000 or 8022 or 22 )'
+tcpdump ’tcp[tcpflags] & (tcp-syn|tcp-fin) != 0 and not src and dst net localnet’ # To print the start and 
+             end packets (the SYN and FIN packets) of each TCP conversation that involves a non-local host.
+tcpdump -D # List device interfaces
+tcpdump -i eth1 # Capture only on interface eth1
+tcpdump -w file.pcap # Capture packets to file file.pcap
+tcpdump -r file.cap  # Read from file file.pcap.
+tcpdump -l  # Make stdout line buffered.  Useful if you want to see the data while capturing it.  E.g.,
+              ‘‘tcpdump  -l  |  tee dat’’ or ‘‘tcpdump  -l   > dat  &  tail  -f  dat’’.
+tcpdump -n  # Don’t convert host addresses to names.  This can be used to avoid DNS lookups.
+tcpdump -nn # Don’t convert protocol and port numbers etc. to names either.
+       -t     Don’t print a timestamp on each dump line.
+       -tt    Print an unformatted timestamp on each dump line.
+       -ttt   Print a delta (micro-second resolution) between current and previous line on each dump line.
+       -tttt  Print a timestamp in default format proceeded by date on each dump line.
+       -ttttt Print a delta (micro-second resolution) between current and first line on each dump line.
+e.g.   sudo tcpdump -tttt -l src hadoop-01-01 | tee /tmp/tcpdump1.txt
+tcpdump -XX # Print packet contents in Hex and ASCII. Use -A for just ASCII
+
+Filter Options  (see 'man pcap-filter'):
+      type   type qualifiers say what kind of thing the id name or number refers to.  
+             Possible types are host, net , port and portrange.  E.g., ‘host foo’, ‘net 128.3’, ‘port 20’, ‘por-
+              trange 6000-6008’.  If there is no type qualifier, host is assumed.
+       dir    dir qualifiers specify a particular transfer direction to and/or from id.  
+              Possible directions are src, dst, src or dst, src and dst,  etc.
+              E.g.,  ‘src  foo’,  ‘dst  net 128.3’, ‘src or dst port ftp-data’.  
+              If there is no dir qualifier, src or dst is assumed.
+       proto  proto  qualifiers restrict the match to a particular protocol.  Possible protos are: 
+                 ether, fddi, tr, wlan, ip, ip6, arp, rarp, decnet, tcp and udp.  E.g., ‘ether src foo’,
+              If there is no proto qualifier, all protocols consistent with the  type  are  assumed.
+              E.g., ‘src foo’ means ‘(ip or arp or rarp) src foo’ (except the latter is not legal syntax), and 
+                    ‘port 53’ means ‘(tcp or udp) port 53’.
+
+      Primitives may be combined using: A parenthesized group of primitives and operators (parentheses are 
+              special to the Shell and must be escaped).
+              Negation (‘!’ or ‘not’),  Concatenation (‘&&’ or ‘and’),  Alternation (‘||’ or ‘or’).
+       If an identifier is given without a keyword, the most recent keyword is assumed.  For example,
+            not host vs and ace is short for not host vs and host ace
+
+tcpdump Flags:
+    [S] - SYN (Start Connection)
+    [.] - No Flag Set
+    [S.]- Some tcpdump versions print SYN-ACK as 'S.'
+    [P] - PSH (Push Data)
+    [F] - FIN (Finish Connection)
+    [R] - RST (Reset Connection)
+
+    When a TCP connection is being initialized, there is a three way handshake (SYN SYN-ACK ACK) to sync up the connection. 
+    After the handshake, packets are sent and ACK along the way. When the connection is being terminated, there is another 
+     three way handshake (FIN ACK-FIN ACK) to close the connection.`
+
+=============================================================================
+
+netcat/nc commands:
+
+netcat -z -v domain.com 1-1000 # Use nc to scan ports 1-1000
+netcat -z -n -v 111.111.111.111 1-1000 # Scan on a given IP address
+nc -z -v hadoop-01-01 50000-65535 2>&1 | grep -v "Connection refused" # Filter out failed ports
+nc -l 2517    # Listen on port 2517
+nc <host> 2517   # Connect to host on port 2517
+
+
+
