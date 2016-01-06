@@ -9,10 +9,20 @@ yarn logs -applicationId <appId> | less
 sudo find /data/nn/ -name "*<BLK_ID>*"  # Find actual file containing data block on DataNode
                                         # NOTE: Assume file system prefix of /data/nn.
 
+# DFS Commands
+hdfs dfsadmin -safemode enter # Set filesystem to read-only mode. No replication or deletes.
+hdfs dfsadmin -safemode leave
+hdfs dfsadmin -safemode wait  # Command blocks until safemode exits. Useful for scripts
+hdfs dfsadmin -saveNamespace # Save Namenode metadata to disk. Reset edits log.
+                             # Note: Must be in safemode
+hdfs dfsadmin -allowSnapshot <directory>  # Enable snapshots for directory
+hdfs dfsadmin -report # Report information about DFS filesystem
+hdfs dfsadmin -refreshNodes  # Re-read dfs.hosts and dfs.hosts.exclude files
+hdfs fsck / -files -blocks -locations -racks # List info about HDFS files.
 
 Cloudera Hadoop/HDFS Logs:
 
-When YARN log aggregatoon is enabled: Container log files are moved from NodeManager hosts'
+When YARN log aggregation is enabled: Container log files are moved from NodeManager hosts'
 /var/log/hadoop-yarn/container directories to HDFS when the application completes
 - Default HDFS directory: /tmp/logs
 MapReduce jobs produce the following logs:
