@@ -3,7 +3,11 @@
 Important that at least one copy of the NameNode's metadata is stored on a separate machine in case of catastrophic failure.
 -Or use JournalNode quorum (odd number. Three or greater).
 
-
+HDFS Memory Settings:
+- Ideal heap size will vary by use case
+- Recommended to reserve 3GB of available memory for the OS
+- NameNode – 1GB per million blocks (recommended minimum 4GB)
+- DataNode – 1GB min, 4GB max
 
 WORKER NODES:
 
