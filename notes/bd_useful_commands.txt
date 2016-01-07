@@ -31,7 +31,14 @@ hdfs fsck / -files -blocks -locations -racks # List info about HDFS files.
 – Non-HA HDFS example using WebHDFS
 – hadoop distcp hdfs://cluster1_nn:8020/path/to/src webhdfs://cluster2_nn:50070/path/to/dest
 
-Cloudera Hadoop/HDFS Logs:
+# yarn CLI commands:
+yarn application –list all  # view all applicaHons on the cluster, including completed applications
+yarn application –status <application_ID> # To display the status of an individual application
+yarn application –kill <application_ID>
+yarn application -list -appStates FINISHED | grep 'word count' # Look up application ID
+yarn logs -applicationId application_1392918622651_0004  # View logs
+
+## Cloudera Hadoop/HDFS Logs:
 
 When YARN log aggregation is enabled: Container log files are moved from NodeManager hosts'
 /var/log/hadoop-yarn/container directories to HDFS when the application completes
@@ -43,6 +50,18 @@ MapReduce jobs produce the following logs:
 - Counters
 MapReduce Job History Server log directory Default: /var/log/hadoop-mapreduce
 
+Spark application history location
+– Default location in HDFS: /user/spark/applicationHistory
+– Find and view the logs from the command line:
+– $ sudo –u hdfs hdfs dfs /user/spark/applicationHistory
+– $ sudo –u hdfs hdfs dfs –cat /user/spark/application_<application_id>/EVENT_LOG_1
+# Spark History Server log directory Default: /var/log/spark
+
+# Access all application logs in Cloudera Manager
+– From the YARN Applications page, choose “Collect diagnostics data”
+– Options to “Download Result Data”, and view recent or full logs
+
+## Network troubleshooting commands:
 tcpdump cheat sheet:
 tcpdump [ -AdDefIKlLnNOpqRStuUvxX ] [ expression ]
 
