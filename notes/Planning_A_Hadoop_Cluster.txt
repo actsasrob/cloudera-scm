@@ -162,8 +162,20 @@ Inventory the vcores, memory, and disks available on each worker node
 – Determine the number of containers needed to best support YARN applicaFons based on the type of workload
 – Monitor usage and tune esFmated values to find optimal settings
 
+## Namenode Configuration:
+HDFS NameNode Metadata Location:
+For all HDFS deployments, dfs.namenode.name.dir must specify at least two disks (or a RAID volume) on the NameNode
+– Failure to set correctly will result in eventual loss of your cluster’s data
+# By default, a NameNode will write to the edit log files in all directories in dfs.namenode.name.dir synchronously
+– For non-HA HDFS deployments, can explicitly specify the path to the edits log directory by seSng dfs.namenode.edits.dir
+– High-Availability HDFS seSngs are discussed in a later chapter
+# If a directory in the list disappears, the NameNode will con1nue to function
+– It will ignore that directory un-l it is restarted
 
-OS Configuration:
+# Loss of a NameNode’s metadata will result in the effec1ve loss of all the data in its namespace
+– Although the blocks will remain, there is no way of reconstructing the original files without the metadata
+
+## OS Configuration:
 
 Increase the nofile ulimit for the cloudera-scm user to at least 32K
  Cloudera Manager sets this to 32K in /usr/sbin/cmf-agent by default
