@@ -175,6 +175,12 @@ For all HDFS deployments, dfs.namenode.name.dir must specify at least two disks 
 # Loss of a NameNode’s metadata will result in the effec1ve loss of all the data in its namespace
 – Although the blocks will remain, there is no way of reconstructing the original files without the metadata
 
+# For non-HA HDFS deployments, dfs.namenode.name.dir must additionally specify an NFS mount elsewhere on the network
+– If you do not do this, catastrophic failure of the NameNode will result in the loss of the metadata
+#  Recommenda1on for the NFS mount point tcp,soft,intr,timeo=10,retrans=10
+– So[ mount so the NameNode will not hang if the mount point disappears
+– Will retry transac-ons 10 -mes, at 1-10 second intervals, before being deemed to have failed
+
 ## OS Configuration:
 
 Increase the nofile ulimit for the cloudera-scm user to at least 32K
