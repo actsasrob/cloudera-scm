@@ -38,6 +38,19 @@ yarn application –kill <application_ID>
 yarn application -list -appStates FINISHED | grep 'word count' # Look up application ID
 yarn logs -applicationId application_1392918622651_0004  # View logs
 
+## Cloudera Configuration:
+– A subdirectory of: /var/run/cloudera-scm-agent/process/
+
+# Cloudera Manager stores client configura1ons separately from service configurations
+– Default location: /etc/hadoop/conf
+# Cloudera Manager creates a “client configura1on file” zip archive of the configuration files containing service properties
+– Each archive has the configuration files needed to access the service
+– Example: a MapReduce client configura-on file contains copies of core-site.xml, hadoop-env.sh, hdfs-site.xml,log4j.properties and mapred-site.xml
+
+# Cloudera Manager decouples serverand client configurations
+– Server seSngs (e.g., NameNode,DataNode) are stored in/var/run/cloudera-scm-agent/process subdirectories
+– Client seSngs are stored in /etc/hadoop subdirectories
+
 ## Cloudera Hadoop/HDFS Logs:
 
 When YARN log aggregation is enabled: Container log files are moved from NodeManager hosts'
