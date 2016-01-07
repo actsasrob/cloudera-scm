@@ -20,6 +20,17 @@ hdfs dfsadmin -report # Report information about DFS filesystem
 hdfs dfsadmin -refreshNodes  # Re-read dfs.hosts and dfs.hosts.exclude files
 hdfs fsck / -files -blocks -locations -racks # List info about HDFS files.
 
+##distcp
+# Copying data from one cluster to another
+– hadoop distcp hdfs://cluster1_nn:8020/path/to/src hdfs://cluster2_nn:8020/path/to/dest
+# Copying data within the same cluster
+– hadoop distcp /path/to/src /path/to/dest
+# Copying data from one cluster to another when the clusters are running different versions of Hadoop
+– HA HDFS example using HApFS
+– hadoop distcp hdfs://mycluster/path/to/src webhdfs://httpfs-svr:14000/path/to/dest
+– Non-HA HDFS example using WebHDFS
+– hadoop distcp hdfs://cluster1_nn:8020/path/to/src webhdfs://cluster2_nn:50070/path/to/dest
+
 Cloudera Hadoop/HDFS Logs:
 
 When YARN log aggregation is enabled: Container log files are moved from NodeManager hosts'
