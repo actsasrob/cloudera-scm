@@ -1,2 +1,11 @@
 # Configure Hue for HDFS High Availability
 http://www.cloudera.com/content/www/en-us/documentation/archive/manager/4-x/4-8-2/Cloudera-Manager-Managing-Clusters/cmmc_HDFS_hi_avail.html#cmug_topic_5_12_3_unique_1__title_182_unique_1
+
+# Cloudera JIRA/Issues:
+https://issues.cloudera.org/secure/Dashboard.jspa
+
+# Cloudera Community Knowledge Base
+https://community.cloudera.com/t5/tkb/communitypage
+
+# Apache JIRA/Issues:
+https://issues.apache.org/jira/secure/BrowseProjects.jspa#all
