@@ -141,4 +141,5 @@ nc -l 2517    # Listen on port 2517
 nc <host> 2517   # Connect to host on port 2517
 
 
-
+# Display network activity for a running process
+strace -p <pid> -f -e trace=network -s 10000
