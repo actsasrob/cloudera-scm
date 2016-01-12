@@ -10,15 +10,33 @@ sudo find /data/nn/ -name "*<BLK_ID>*"  # Find actual file containing data block
                                         # NOTE: Assume file system prefix of /data/nn.
 
 # DFS Commands
-hdfs dfsadmin -safemode enter # Set filesystem to read-only mode. No replication or deletes.
+# Use sudo -u <hdfs admin user> for these commands
+sudo -u hdfs hdfs dfsadmin -safemode enter # Set filesystem to read-only mode. No replication or deletes.
 hdfs dfsadmin -safemode leave
 hdfs dfsadmin -safemode wait  # Command blocks until safemode exits. Useful for scripts
 hdfs dfsadmin -saveNamespace # Save Namenode metadata to disk. Reset edits log.
                              # Note: Must be in safemode
 hdfs dfsadmin -allowSnapshot <directory>  # Enable snapshots for directory
 hdfs dfsadmin -report # Report information about DFS filesystem
+hdfs hdfs dfsadmin -printTopology # Print HDFS cluster topology
 hdfs dfsadmin -refreshNodes  # Re-read dfs.hosts and dfs.hosts.exclude files
 hdfs fsck / -files -blocks -locations -racks # List info about HDFS files.
+hdfs fsck / -file -block -locations -openforwrite # include files opened for write
+hdfs fsck / -list-curruptfilesblocks # list of missing blocks and files they belong to
+hdfs getconf -namenodes # List NameNodes for cluster
+
+## HDFS encryption
+hadoop key list # List encryption keys
+hadoop key create mykey # Create new HDFS encryption key "mykey"
+hdfs crypto -listZones # List encryption zones
+# Create new HDFS encryption zone using key "mykey" and path "/test/encr/place"
+hdfs crypto -createZone -keyName mykey -path /test/encr/place
+hdfs fs -rm -r -f -skipTrash /test/encr/place # Remove an encryption zone
+
+# Moving DAta Between encrypted and unencrypted directories
+# It is not possible to use the hadoop fs -mv option to migrate data between encrypted and unencrypted paths
+#   or from one encryption zone to another. Instead, a distcp must be run to copy the data.  The -skipcrccheck
+#   -update options to distcp are required.
 
 ##distcp
 # Copying data from one cluster to another
@@ -143,3 +161,12 @@ nc <host> 2517   # Connect to host on port 2517
 
 # Display network activity for a running process
 strace -p <pid> -f -e trace=network -s 10000
+
+## AWS
+# Get instance metadata
+curl http://169.254.169.254/latest/meta-data/ # Get list of latest instance metadata
+curl http://169.254.169.254/latest/meta-data/public-ipv4 # Get public IP address
+
+## Misc:
+sudo du --max-depth=1 --one-file-system --bytes /var/log | sort --numeric
+sudo du --summarize --one-file-system --bytes /var/log/* | sort --numeric
