@@ -170,3 +170,8 @@ curl http://169.254.169.254/latest/meta-data/public-ipv4 # Get public IP address
 ## Misc:
 sudo du --max-depth=1 --one-file-system --bytes /var/log | sort --numeric
 sudo du --summarize --one-file-system --bytes /var/log/* | sort --numeric
+
+# Cloudera Manager API:
+curl -X POST -u admin:admin 'http://192.168.122.248:7180/api/v11/clusters/Cluster%201/commands/stop'
+curl -u admin:admin 'http://192.168.122.248:7180/api/v11/commands/723'  # Get status for command 723
+  
