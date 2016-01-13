@@ -88,6 +88,15 @@ Spark application history location
 – $ sudo –u hdfs hdfs dfs –cat /user/spark/application_<application_id>/EVENT_LOG_1
 # Spark History Server log directory Default: /var/log/spark
 
+# Hue Troubleshooting
+Navigate to the Hue service configuration in Cloudera Manager
+Search for Hue Service Environment Advanced Configuration Snippet (Safety Valve) and add the following:
+DEBUG=true
+DESKTOP_DEBUG=true
+Save and restart Hue service
+Collect the logs from /var/run/cloudera-scm-agent/process/<id>-hue-HUE_SERVER/logs where <id> is the most recently created. (Logs are not stored in /var/log/hue)
+
+
 # Access all application logs in Cloudera Manager
 – From the YARN Applications page, choose “Collect diagnostics data”
 – Options to “Download Result Data”, and view recent or full logs
