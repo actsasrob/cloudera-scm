@@ -100,6 +100,27 @@ Collect the logs from /var/run/cloudera-scm-agent/process/<id>-hue-HUE_SERVER/lo
 debug=true kite-dataset info  # Display environment variables used by Kite
 debug=true kite-dataset info users   # Get info about 'users' table and env vars
 
+#!/bin/bash
+set -x
+ZKHOSTS=scm1
+# create partition strategy 
+kite-dataset -v partition-config id:copy -s schema.avsc -o partition.json 
+# create mapping-config 
+kite-dataset -v mapping-config id:key customerName:common customerAddress:common -s schema.avsc \
+     -p partition.json -o mapping.json 
+# create dataset
+kite-dataset create dataset:hbase:$ZKHOSTS/customers --use-hbase -s schema.avsc \
+      --partition-by partition.json --mapping mapping.json 
+      
+#!/bin/bash
+set -x
+ZKHOSTS=scm1
+kite-dataset csv-import customers1.csv  dataset:hbase:$ZKHOSTS/customers --no-header --delimiter '\t'
+
+kite-dataset show dataset:hbase:scm1/customers
+kite-dataset schema dataset:hbase:scm1/customers
+kite-dataset flume-config --channel-type memory dataset:hbase:scm1/customers -o flume_kite.conf
+
 # Access all application logs in Cloudera Manager
 – From the YARN Applications page, choose “Collect diagnostics data”
 – Options to “Download Result Data”, and view recent or full logs
