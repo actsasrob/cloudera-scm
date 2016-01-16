@@ -96,6 +96,9 @@ DESKTOP_DEBUG=true
 Save and restart Hue service
 Collect the logs from /var/run/cloudera-scm-agent/process/<id>-hue-HUE_SERVER/logs where <id> is the most recently created. (Logs are not stored in /var/log/hue)
 
+# Kite Troubleshooting/examples
+debug=true kite-dataset info  # Display environment variables used by Kite
+debug=true kite-dataset info users   # Get info about 'users' table and env vars
 
 # Access all application logs in Cloudera Manager
 – From the YARN Applications page, choose “Collect diagnostics data”
