@@ -110,6 +110,8 @@ declare -a CM_DIRS=(/var/log/cloudera-scm-headlamp \
 /var/log/impalad/audit \
 /var/log/impalad/lineage \
 /var/log/impala-llama \
+/var/log/flume-ng \
+/var/lib/flume-ng
 )
 
 declare -a CM_AGENT_DIRS=(/var/log/cloudera-scm-agent \
@@ -158,6 +160,8 @@ declare -a CM_AGENT_DIRS=(/var/log/cloudera-scm-agent \
 /var/log/impalad/audit \
 /var/log/impalad/lineage \
 /var/log/impala-llama \
+/var/log/flume-ng \
+/var/lib/flume-ng
 )
 
 PARCEL_REPO_DIR=/opt/cloudera/parcel-repo
