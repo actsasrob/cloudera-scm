@@ -81,6 +81,15 @@ MapReduce jobs produce the following logs:
 - Counters
 MapReduce Job History Server log directory Default: /var/log/hadoop-mapreduce
 
+# Hive/Impala
+create external table ncdc2 (record string) 
+partitioned by (station string, year string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+LOCATION '/user/rob/output1';
+
+msck repair table ncdc2; # In Hive shell and run following command to make data in paritions visible:
+refresh ncdc2; # Execute in Impala to make table data visible after running above command in Hive
+
 Spark application history location
 – Default location in HDFS: /user/spark/applicationHistory
 – Find and view the logs from the command line:
