@@ -105,6 +105,11 @@ DESKTOP_DEBUG=true
 Save and restart Hue service
 Collect the logs from /var/run/cloudera-scm-agent/process/<id>-hue-HUE_SERVER/logs where <id> is the most recently created. (Logs are not stored in /var/log/hue)
 
+# Avro/Parquet
+avro-tools tojson <file> # Display contents of Avro file in JSON
+avro-tools totext <file> # Display contents of Avro file as text
+parquet-tools dump <file> # Dump contents of Parquest file
+
 # Kite Troubleshooting/examples
 debug=true kite-dataset info  # Display environment variables used by Kite
 debug=true kite-dataset info users   # Get info about 'users' table and env vars
