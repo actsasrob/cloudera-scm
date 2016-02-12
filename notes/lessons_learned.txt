@@ -22,3 +22,16 @@ dfs.datanode.handler.count
 dfs.datanode.max.transfer.threads
 
 ==================================================^^^
+
+==================================================vvv
+2/12/2016 CM CLock Offset Health Check
+Note: as of OPSAPS-25653 in C5.4.1 
+> agent will performs an ntpdc -np and parse the output looking for left margin that start with '*' [1] 
+> if line start with '=' [2] or anything else, it will send back to CM ntpStatus: 3 (NTP_STATUS_NOT_SYNCHRONIZED) [3] 
+> we added debug code that Chris Leroy provided [4] 
+> We confirmed that their ntpdc -np is flapping from * to = 
+
+The character in the left margin indicates the mode this peer entry is operating in. 
+= means the remote server is being polled in client mode 
+* marks the peer the server is currently synchronizing to. 
+==================================================^^^
