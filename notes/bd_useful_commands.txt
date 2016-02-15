@@ -81,6 +81,52 @@ MapReduce jobs produce the following logs:
 - Counters
 MapReduce Job History Server log directory Default: /var/log/hadoop-mapreduce
 
+# Cloudera Hadoop daemon logs are named:
+hadoop-<user-running-hadoop>-<daemon>-<hostname>.log
+/etc/hadoop/conf/log4j.properties  # Logging configuration file
+
+MapReduce v1:
+# Jobtracker created XML job configuration files:
+/var/log/hadoop and /var/log/hadoop/history. #The XML file describes the job configuration.
+The /hadoop file names are constructed as follows: job_<job_ID>_conf.xml. e.g. job_200908190029_0001_conf.xml
+The /hadoop/history file names are constructed as follows: <hostname>_<epoch-of-jobtracker-start>_<job-id>_conf.xml
+        e.g. ec2-72-44-61-184.compute-1.amazonaws.com_1250641772616_job_200908190029_0001_conf.xml
+# Job Statistics - Jobtracker created runtime statistics from jobs to these files. Those statistics include task 
+#   attempts, time spent shuffling, input splits given to task attempts, start times of tasks attempts and other information.
+#The statistics files are named: <hostname>_<epoch-of-jobtracker-start>_<job-id>_<job-name>
+   e.g. ec2-72-44-61-184.compute-1.amazonaws.com_1250641772616_job_200908190029_0002_hadoop_test-mini-mr
+# Standard Error for a particular task attempt. - These logs are created by each tasktracker. They contain information 
+#   written to standard error (stderr). /var/log/hadoop/userlogs/attempt_<job-id>_<map-or-reduce>_<attempt-id>
+# Standard Out for a particular task attempt.
+#log4j informational messages from within the task process
+#  These logs contains anything that log4j writes from within the task process. This includes some Hadoop internal 
+#  diagnostic info. If the job’s mapper or reducer implementations include call such as LOG.info(), then that output 
+#  also get written here. Messages can include information about the task, such as how big its record buffer was or 
+#  how many reduce tasks there are.
+
+# jobtracker
+/var/log/hadoop
+              /hadoop-* =&gt; daemon logs
+              /job_*.xml =&gt; job configuration XML logs
+              /history
+                     /*_conf.xml =&gt; job configuration logs
+                     &lt; everything else &gt; =&gt; job statistics logs
+# namenode/secondary namenode
+/var/log/hadoop
+              /hadoop-* =&gt; daemon logs
+# datanode
+/var/log/hadoop
+              /hadoop-* =&gt; daemon logs
+# tasktracker
+/var/log/hadoop
+              /hadoop-* =&gt; daemon logs
+              /userlogs
+                      /attempt_*
+                               /stderr =&gt; standard error logs
+                               /stdout =&gt; standard out logs
+                               /syslog =&gt; log4j logs
+
+
 # Hive/Impala
 create external table ncdc2 (record string) 
 partitioned by (station string, year string)
