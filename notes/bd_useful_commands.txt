@@ -354,3 +354,38 @@ Logger x = LogManager.getLogger("wombat");
 # For example, the PatternLayout with the conversion pattern "%r [%t] %-5p %c - %m%n" will output something akin to: 
 176 [main] INFO  org.foo.Bar - Located nearest gas station.
 
+# Sample log4j.properties file
+hadoop.root.logger=INFO,console
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.target=System.err
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{2}: %m%n
+
+############
+# syslog - system logger
+
+# See 'man 3 syslog' for list of facilities and levels.
+
+# rsyslogd - Rsyslog is an open-source software utility used on UNIX and Unix-like computer systems for forwarding 
+#   log messages in an IP network. It implements the basic syslog protocol, extends it with content-based filtering,
+#   rich filtering capabilities, flexible configuration options and adds features such as using TCP for transport.
+
+## Sample /etc/rsyslogd.conf configuration to route facility/level messages:
+# This lets rsyslogd log all messages that come with either the info or the notice facility into the file 
+#   /var/log/messages, except for all messages that use the mail facility.
+*.=info;*.=notice;\
+mail.none /var/log/messages
+
+# This statement causes rsyslogd to log all messages that come with the info priority to the file /var/log/messages. 
+#   But any message coming either with the mail or the news facility will not be stored.
+*.=info;\
+mail,news.none /var/log/messages
+
+# Log anything of info level and above to /var/log/messages. Skip authpriv, mail, and cron facilities.
+*.info;mail.none,authpriv.none;mail.none /var/log/messages
+
+# Emergency messages will be displayed using wall
+*.=emerg *
+
+# Log all messages using kern facility to console
+kern.* /dev/console
