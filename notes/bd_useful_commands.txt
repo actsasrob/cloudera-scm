@@ -56,7 +56,7 @@ yarn application –kill <application_ID>
 yarn application -list -appStates FINISHED | grep 'word count' # Look up application ID
 yarn logs -applicationId application_1392918622651_0004  # View logs
 
-## Cloudera Configuration:
+## Cloudera Configuration: Configuration for daemon processes can be found under sub-directories of ../process/
 – A subdirectory of: /var/run/cloudera-scm-agent/process/
 
 # Cloudera Manager stores client configura1ons separately from service configurations
@@ -66,14 +66,26 @@ yarn logs -applicationId application_1392918622651_0004  # View logs
 – Example: a MapReduce client configura-on file contains copies of core-site.xml, hadoop-env.sh, hdfs-site.xml,log4j.properties and mapred-site.xml
 
 # Cloudera Manager decouples serverand client configurations
-– Server seSngs (e.g., NameNode,DataNode) are stored in/var/run/cloudera-scm-agent/process subdirectories
-– Client seSngs are stored in /etc/hadoop subdirectories
+– Server settings (e.g., NameNode,DataNode) are stored in/var/run/cloudera-scm-agent/process subdirectories
+– Client settings are stored in /etc/hadoop subdirectories
 
 ## Cloudera Hadoop/HDFS Logs:
 
 When YARN log aggregation is enabled: Container log files are moved from NodeManager hosts'
 /var/log/hadoop-yarn/container directories to HDFS when the application completes
-- Default HDFS directory: /tmp/logs
+- Default HDFS directory: /tmp/logs # Per-user directories created under this dir. e.g. /tmp/logs/rob/log/
+
+# Tools tend to log to: /var/log/<tool/service e.g. /var/log/flume-ng
+# Exceptions: ???
+/var/log/hive  # HiveServer2 and Metastore server
+/var/log/hcatalog   # Hive HCatalog server
+/var/log/impalad, /var/log/statestore, /var/log/catalogd # Impala
+
+MapReduce V2:
+/var/log/hadoop-hdfs # datanode, namenode, journalnode
+/var/log/hadoop-yarn # nodemanager, resourcemanager
+/var/log/hadoop-mapreduce # jobhistory server
+
 MapReduce jobs produce the following logs:
 - ApplicationMaster log
 - stdout, stderr, and syslog output for each Map and Reduce task
@@ -84,6 +96,15 @@ MapReduce Job History Server log directory Default: /var/log/hadoop-mapreduce
 # Cloudera Hadoop daemon logs are named:
 hadoop-<user-running-hadoop>-<daemon>-<hostname>.log
 /etc/hadoop/conf/log4j.properties  # Logging configuration file
+
+Spark:
+# Spark can	write	application history logs to HDFS. Default:	enabled	
+# Spark	application	history. Default	location in HDFS: /user/spark/applicationHistory
+# Find	and	view	the	logs	from	the	command	line:	
+$ sudo –u hdfs hdfs dfs /user/spark/applicationHistory
+$ sudo –u hdfs hdfs dfs –cat /user/spark/application_<application_id>/EVENT_LOG_1
+# Spark	History	Server	log	directory # Default: /var/log/spark
+
 
 MapReduce v1:
 # Jobtracker created XML job configuration files:
