@@ -289,3 +289,68 @@ sudo du --summarize --one-file-system --bytes /var/log/* | sort --numeric
 curl -X POST -u admin:admin 'http://192.168.122.248:7180/api/v11/clusters/Cluster%201/commands/stop'
 curl -u admin:admin 'http://192.168.122.248:7180/api/v11/commands/723'  # Get status for command 723
   
+# Logging
+# SLF4J - Simple Logging Facade For Java. Provides a Java logging API by means of a simple facade pattern. The underlying 
+#   logging backend is determined at runtime by adding the desired binding to the classpath and may be the standard Sun 
+#   Java logging package java.util.logging,log4j,logback or tinylog.
+# The SLF4J binding provided in this component cause all the SLF4J APIs to be routed to Log4j 2. Simply include the 
+#   Log4j 2 SLF4J Binding jar along with the Log4j 2 jars and SLF4J API jar to cause all SLF4J logging to be handled by 
+#   Log4j 2. 
+
+# Log4J 2. See http://logging.apache.org/log4j/2.x/manual/architecture.html for Log4J 2 architectural overview.
+# A LoggerConfig is said to be an ancestor of another LoggerConfig if its name followed by a dot is a prefix of 
+#   the descendant logger name. A LoggerConfig is said to be a parent of a child LoggerConfig if there are no 
+#  ancestors between itself and the descendant LoggerConfig. 
+
+# LoggerHierarchy. The root LoggerConfig resides at the top of the LoggerConfig hierarchy. It is exceptional in that 
+#   it always exists and it is part of every hierarchy. A Logger that is directly linked to the root LoggerConfig can 
+#   be obtained as follows:
+Logger logger = LogManager.getLogger(LogManager.ROOT_LOGGER_NAME); #Alternatively, and more simply:
+Logger logger = LogManager.getRootLogger();
+
+# LoggerContext. All other Loggers can be retrieved using the LogManager.getLogger static method by passing the name 
+#   of the desired Logger. The LoggerContext acts as the anchor point for the Logging system. However, it is possible 
+#   to have multiple active. LoggerContexts in an application depending on the circumstances.
+
+# Configuration. Every LoggerContext has an active Configuration. The Configuration contains all the Appenders, 
+#   context-wide Filters, LoggerConfigs and contains the reference to the StrSubstitutor. 
+
+# Logger.  Loggers are created by calling LogManager.getLogger. The Logger itself performs no direct actions. It 
+#   simply has a name and is associated with a LoggerConfig. It extends AbstractLogger and implements the required 
+#   methods. As the configuration is modified Loggers may become associated with a different LoggerConfig, thus 
+#   causing their behavior to be modified. 
+Logger x = LogManager.getLogger("wombat");
+
+# Log4j makes it easy to name Loggers by software component. This can be accomplished by instantiating a Logger in 
+#   each class, with the logger name equal to the fully qualified name of the class. Since naming Loggers after 
+#   their owning class is such a common idiom, the convenience method LogManager.getLogger() is provided to automatically 
+#   use the calling class's fully qualified class name as the Logger name. 
+
+# LoggerConfig.  LoggerConfig objects are created when Loggers are declared in the logging configuration. The 
+#   LoggerConfig contains a set of Filters that must allow the LogEvent to pass before it will be passed to any 
+#   Appenders. It contains references to the set of Appenders that should be used to process the event.
+
+# Log Levels. LoggerConfigs will be assigned a Log Level. The set of built-in levels includes TRACE, DEBUG, INFO, WARN, 
+#    ERROR, and FATAL. Log4j 2 also supports custom log levels. 
+
+# Filter. In addition to the automatic log Level filtering that takes place as described in the previous section, 
+#   Log4j provides Filters that can be applied before control is passed to downstream components at various stages.
+
+# Appender.The ability to selectively enable or disable logging requests based on their logger is only part of the picture.
+#   Log4j allows logging requests to print to multiple destinations. In log4j speak, an output destination is called an
+#   Appender. Currently, appenders exist for the console, files, remote socket servers, Apache Flume, JMS, remote UNIX 
+#   Syslog daemons, and various database APIs. See the section on Appenders for more details on the various types 
+#   available. More than one Appender can be attached to a Logger. 
+# Each enabled logging request for a given logger will be forwarded to all the appenders in that Logger's LoggerConfig 
+#   as well as the Appenders of the LoggerConfig's parents. In other words, Appenders are inherited additively from 
+#   the LoggerConfig hierarchy. 
+# Appender Additivity.  The output of a log statement of Logger L will go to all the Appenders in the LoggerConfig 
+#   associated with L and the ancestors of that LoggerConfig. This is the meaning of the term "appender additivity". 
+
+# Layout. Used to customize the output format. This is accomplished by associating a Layout with an Appender. The Layout 
+#    is responsible for formatting the LogEvent according to the user's wishes, whereas an appender takes care of 
+#   sending the formatted output to its destination. The PatternLayout, part of the standard log4j distribution, lets 
+#   the user specify the output format according to conversion patterns similar to the C language printf function.
+# For example, the PatternLayout with the conversion pattern "%r [%t] %-5p %c - %m%n" will output something akin to: 
+176 [main] INFO  org.foo.Bar - Located nearest gas station.
+
