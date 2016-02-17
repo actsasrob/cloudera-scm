@@ -6,8 +6,8 @@ yarn application -list -appStates FINISHED # Get list of apps that have finished
    Now run this command (where appId is the actual application ID).
 yarn logs -applicationId <appId> | less
 
-sudo find /data/nn/ -name "*<BLK_ID>*"  # Find actual file containing data block on DataNode
-                                        # NOTE: Assume file system prefix of /data/nn.
+sudo find /data/dn/ -name "*<BLK_ID>*"  # Find actual file containing data block on DataNode
+                                        # NOTE: Assume file system prefix of /data/dn.
 
 # DFS Commands
 # Use sudo -u <hdfs admin user> for these commands
