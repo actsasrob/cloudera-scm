@@ -24,6 +24,8 @@ hdfs fsck / -files -blocks -locations -racks # List info about HDFS files.
 hdfs fsck / -file -block -locations -openforwrite # include files opened for write
 hdfs fsck / -list-curruptfilesblocks # list of missing blocks and files they belong to
 hdfs getconf -namenodes # List NameNodes for cluster
+hdfs getconf -confKey dfs.blocksize   # Get default cluster DFS blocksize
+hadoop fs -stat %o hdfs://localhost/user/harsh/file.txt    # Get DFS blocksize for a file
 
 ## HDFS encryption
 hadoop key list # List encryption keys
