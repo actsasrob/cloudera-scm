@@ -78,10 +78,12 @@ When YARN log aggregation is enabled: Container log files are moved from NodeMan
 - Default HDFS directory: /tmp/logs # Per-user directories created under this dir. e.g. /tmp/logs/rob/log/
 
 # Tools tend to log to: /var/log/<tool/service e.g. /var/log/flume-ng
-# Exceptions: ???
+# Exceptions: See accumulo section below. Also check /var/log/cloudera-scm-agent/supervisord.log log for useful info.
 /var/log/hive  # HiveServer2 and Metastore server
 /var/log/hcatalog   # Hive HCatalog server
 /var/log/impalad, /var/log/statestore, /var/log/catalogd # Impala
+/var/log/accumulo: gc-cloud-prod-master2.log, monitor-cloud-prod-master2.log, /var/run/cloudera-scm-agent/process/<latest>-accumulo16-ACCUMULO16_GC/logs
+
 
 MapReduce V2:
 /var/log/hadoop-hdfs # datanode, namenode, journalnode
