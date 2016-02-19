@@ -113,6 +113,7 @@ Note: beeline script eventually invokes "hive --service beeline".
 beeline -u "jdbc:impala://<server>:21050/<database>;AUTH_MECH=0"  # No username/password needed to connect
 beeline -u "jdbc:impala://<server>:21050/<database>;auth=noSasl"  # No username/password needed to connect
 beeline -u "jdbc:hive2://<server>:21050/<database>;auth=noSasl"  # Use the hive driver
+hive --service beeline -u 'jdbc:impala://<server>:21050/;AuthMech=3;SSL=1;SSLTrustStore=/tmp/myTrustStore;SSLTrustStorePwd=password;AllowSelfSignedCerts=1;' -n username -p password # Connect over SSL with self-signed server and username/password
 
 Spark:
 # Spark can	write	application history logs to HDFS. Default:	enabled	
