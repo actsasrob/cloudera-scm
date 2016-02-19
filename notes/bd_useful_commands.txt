@@ -82,8 +82,9 @@ When YARN log aggregation is enabled: Container log files are moved from NodeMan
 /var/log/hive  # HiveServer2 and Metastore server
 /var/log/hcatalog   # Hive HCatalog server
 /var/log/impalad, /var/log/statestore, /var/log/catalogd # Impala
-/var/log/accumulo: gc-cloud-prod-master2.log, monitor-cloud-prod-master2.log, /var/run/cloudera-scm-agent/process/<latest>-accumulo16-ACCUMULO16_GC/logs
-
+/var/log/accumulo: gc_<server_name>.log, master_<server_name>.log, monitor_<server_name>.log, tracer_<server_name>.log, tserver_<server_name>.log, /var/run/cloudera-scm-agent/process/<latest>-accumulo16-ACCUMULO16_GC/logs
+e.g. master_quickstart.cloudera.log
+accumulo-gc.out, accumulo-master.out, accumulo-monitor.out, accumulo-tracer.out, accumulo-tserver.out
 
 MapReduce V2:
 /var/log/hadoop-hdfs # datanode, namenode, journalnode
