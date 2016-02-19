@@ -224,6 +224,15 @@ kite-dataset flume-config --channel-type memory dataset:hbase:scm1/customers -o 
 – From the YARN Applications page, choose “Collect diagnostics data”
 – Options to “Download Result Data”, and view recent or full logs
 
+# Cloudera Manager
+# How to override environment passed to daemons that are started by Cloudera SCM Agent:
+# e.g. To override the HOSTNAME env var
+1. In /etc/default/cloudera-scm-agent on each server, append the following line: 
+export CMF_AGENT_HOSTNAME=$(hostname -f)
+2. Restart the agent, as root:
+ sudo service cloudera-scm-agent restart
+3. Restart role for any daemons that use the environment variable
+
 ## Network troubleshooting commands:
 tcpdump cheat sheet:
 tcpdump [ -AdDefIKlLnNOpqRStuUvxX ] [ expression ]
