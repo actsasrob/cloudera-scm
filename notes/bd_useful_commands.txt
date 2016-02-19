@@ -102,6 +102,18 @@ MapReduce Job History Server log directory Default: /var/log/hadoop-mapreduce
 hadoop-<user-running-hadoop>-<daemon>-<hostname>.log
 /etc/hadoop/conf/log4j.properties  # Logging configuration file
 
+Beeline:
+# Use Cloudera Impala JDBC driver to connect to Impala via beeline examples
+1) Unzip the Cloudera Impala JDBC zip file.
+2) Set the HIVE_AUX_JARS_PATH env var to comma delimited path to all jar files in the exploded zip file
+3a) hive --service beeline -u "jdbc:impala://<server>:21050/<database>;AUTH_MECH=3" -n <username> -p <password>
+3b) beeline -u "jdbc:impala://<server>:21050/<database>;AUTH_MECH=3" -n <username> -p <password>
+Note: beeline script eventually invokes "hive --service beeline".
+      The hive script sets CLASSPATH to include all the jars needed for hive. It will override the CLASSPATH env var.
+beeline -u "jdbc:impala://<server>:21050/<database>;AUTH_MECH=0"  # No username/password needed to connect
+beeline -u "jdbc:impala://<server>:21050/<database>;auth=noSasl"  # No username/password needed to connect
+beeline -u "jdbc:hive2://<server>:21050/<database>;auth=noSasl"  # Use the hive driver
+
 Spark:
 # Spark can	write	application history logs to HDFS. Default:	enabled	
 # Spark	application	history. Default	location in HDFS: /user/spark/applicationHistory
