@@ -115,6 +115,8 @@ beeline -u "jdbc:impala://<server>:21050/<database>;auth=noSasl"  # No username/
 beeline -u "jdbc:hive2://<server>:21050/<database>;auth=noSasl"  # Use the hive driver
 hive --service beeline -u 'jdbc:impala://<server>:21050/;AuthMech=3;SSL=1;SSLTrustStore=/tmp/myTrustStore;SSLTrustStorePwd=password;AllowSelfSignedCerts=1;' -n username -p password # Connect over SSL with self-signed server and username/password
 
+NOTE: To use "LOAD DATA [LOCAL] INPATH..." in Beeline you must be logged into the HiveServer2 server.
+
 Spark:
 # Spark can	write	application history logs to HDFS. Default:	enabled	
 # Spark	application	history. Default	location in HDFS: /user/spark/applicationHistory
@@ -224,8 +226,33 @@ kite-dataset flume-config --channel-type memory dataset:hbase:scm1/customers -o 
 – From the YARN Applications page, choose “Collect diagnostics data”
 – Options to “Download Result Data”, and view recent or full logs
 
-# Cloudera Manager
-# How to override environment passed to daemons that are started by Cloudera SCM Agent:
+## Cloudera Manager Server/Agents
+# How hostname/host ID Is Determined:
+Determine the ID which the agent is using to identify itself to Cloudera Manager. This is set by three things in 
+descending order of priority: 
+1.listening_hostname (in /etc/cloudera-scm-agent/config.ini)
+Note: This bug in versions before Cloudera Manager 5.5, only occurs if reported_hostname is also set in the same file. Internally tracked as  OPSAPS-27991. 
+2.CMF_AGENT_ARGS='--hostname=cmhost --host_id=cmhost' (in /etc/default/cloudera-scm-agent), where host_id is the value reported
+3./var/lib/cloudera-scm-agent/uuid
+
+# Examine the host in the hosts page in Cloudera Manager. If the Host ID does not match the ID determined above, then 
+  the host will be registering as a different host. If the hostname being reported is the same there will be two entries 
+  in the hosts page, each with a different Host ID but the same hostname.
+
+# Determine the hostname being reported to Cloudera Manager by the agent. This is set by the following, in descending order 
+  of priority: 
+1.reported_hostname (in /etc/cloudera-scm-agent/config.ini)
+2.CMF_AGENT_ARGS='--hostname=cmhost --host_id=cmhost' (in /etc/default/cloudera-scm-agent), where hostname is the value
+  reported
+3.The hostname result of the following command, which asks the operating system what the system's hostname is. This 
+  command also prints the IP address associated with that hostname:
+
+   python -c "import socket; print socket.getfqdn(); print socket.gethostbyname(socket.getfqdn())"
+   
+# See http://www.cloudera.com/content/www/en-us/documentation/enterprise/latest/topics/cm_ag_change_hostnames.html which 
+  defines steps required for hostname changes. 
+
+## How to override environment passed to daemons that are started by Cloudera SCM Agent:
 # e.g. To override the HOSTNAME env var
 1. In /etc/default/cloudera-scm-agent on each server, append the following line: 
 export CMF_AGENT_HOSTNAME=$(hostname -f)
