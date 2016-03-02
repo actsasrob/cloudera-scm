@@ -263,8 +263,11 @@ export CMF_AGENT_HOSTNAME=$(hostname -f)
 ## SSL/TLS:
 As of CDH 5.4.x some services still require TLSv1.0, but as of 5.5.3 *all* our services support TLS v1.2, so it would be 
 safe to implement that action after you've upgraded your cluster to CDH 5.5.3 or greater. (Documentation references below)
-5.4: http://www.cloudera.com/documentation/enterprise/5-4-x/topics/cdh_ig_req_supported_versions.html
-5.5.3: http://www.cloudera.com/documentation/enterprise/latest/topics/cdh_ig_req_supported_versions.html?scroll=concept_pdd_kzf_vp_unique_1#TLS_Security_Versions_Table_unique_1
+
+## Supported Operating Systems, Databases, Supported JDK Versions, Supported Browsers, Supported Internet Protocol, 
+   Supported Transport Layer Security Versions
+   5.4: http://www.cloudera.com/documentation/enterprise/5-4-x/topics/cdh_ig_req_supported_versions.html
+   5.5.3: http://www.cloudera.com/documentation/enterprise/latest/topics/cdh_ig_req_supported_versions.html?scroll=concept_pdd_kzf_vp_unique_1#TLS_Security_Versions_Table_unique_1
 
 ## Network troubleshooting commands:
 tcpdump cheat sheet:
