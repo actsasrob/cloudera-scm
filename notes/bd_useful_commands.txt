@@ -35,7 +35,7 @@ hdfs crypto -listZones # List encryption zones
 hdfs crypto -createZone -keyName mykey -path /test/encr/place
 hdfs fs -rm -r -f -skipTrash /test/encr/place # Remove an encryption zone
 
-# Moving DAta Between encrypted and unencrypted directories
+# Moving Data Between encrypted and unencrypted directories
 # It is not possible to use the hadoop fs -mv option to migrate data between encrypted and unencrypted paths
 #   or from one encryption zone to another. Instead, a distcp must be run to copy the data.  The -skipcrccheck
 #   -update options to distcp are required.
@@ -259,6 +259,12 @@ export CMF_AGENT_HOSTNAME=$(hostname -f)
 2. Restart the agent, as root:
  sudo service cloudera-scm-agent restart
 3. Restart role for any daemons that use the environment variable
+
+## SSL/TLS:
+As of CDH 5.4.x some services still require TLSv1.0, but as of 5.5.3 *all* our services support TLS v1.2, so it would be 
+safe to implement that action after you've upgraded your cluster to CDH 5.5.3 or greater. (Documentation references below)
+5.4: http://www.cloudera.com/documentation/enterprise/5-4-x/topics/cdh_ig_req_supported_versions.html
+5.5.3: http://www.cloudera.com/documentation/enterprise/latest/topics/cdh_ig_req_supported_versions.html?scroll=concept_pdd_kzf_vp_unique_1#TLS_Security_Versions_Table_unique_1
 
 ## Network troubleshooting commands:
 tcpdump cheat sheet:
