@@ -192,7 +192,50 @@ DESKTOP_DEBUG=true
 Save and restart Hue service
 Collect the logs from /var/run/cloudera-scm-agent/process/<id>-hue-HUE_SERVER/logs where <id> is the most recently created. (Logs are not stored in /var/log/hue)
 
-# Avro/Parquet
+# Accumulo
+$ACCUMULO_HOME/bin/accumulo shell -u [username] # Start the shell
+
+root@myinstance> tables # See list of tables
+
+# The compact command instructs Accumulo to schedule a compaction of the table during which files are consolidated and deleted entries are removed.
+root@myinstance mytable> compact -t mytable
+
+#The flush command instructs Accumulo to write all entries currently in memory for a given table to disk.
+root@myinstance mytable> flush -t mytable
+root@myinstance> createtable mytable
+root@myinstance mytable>
+
+root@myinstance mytable> createtable testtable
+root@myinstance testtable>
+
+root@myinstance testtable> deletetable testtable
+deletetable { testtable } (yes|no)? yes
+Table: [testtable] has been deleted.
+
+root@myinstance>
+The Shell can also be used to insert updates and scan tables. This is useful for inspecting tables.
+root@myinstance mytable> scan
+
+# Run a program
+$ACCUMULO_HOME/bin/accumulo classpath
+
+config -t <table> # get default, system, table property overrides
+# Tables can be assigned to namespaces. Properties can then be set at the namespace level and will apply to tables in the
+# namespace.
+user@accumulo> config -f table.file.replication -t ns.test # Display value of setting for a table
+user@accumulo> config -f table.file.replication -ns ns     # Display value of setting for a namespace
+user@accumulo> config -ns ns -s table.file.replication=2   # Override system setting at namespace level
+
+# Precedence of Properties - Properties that are applied more specifically take precedence over those applied more
+# generally. For example, an instance-wide property can be overridden by a namespacespecific
+# property, which itself can be overridden by a table-specific property
+
+# An Accumulo instance consists of all the processes that are participating in the same
+# cluster. It is possible to set instance-wide properties,...e.g.
+user@accumulo> config -f table.file.replication  # See the default setting
+user@accumulo> config -s table.file.replication=1
+
+## Avro/Parquet
 avro-tools tojson <file> # Display contents of Avro file in JSON
 avro-tools totext <file> # Display contents of Avro file as text
 parquet-tools dump <file> # Dump contents of Parquest file
