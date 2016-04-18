@@ -27,6 +27,14 @@ hdfs getconf -namenodes # List NameNodes for cluster
 hdfs getconf -confKey dfs.blocksize   # Get default cluster DFS blocksize
 hadoop fs -stat %o hdfs://localhost/user/harsh/file.txt    # Get DFS blocksize for a file
 
+# hdfs fsck - description of output rows:
+Minimally replicated blocks: these are blocks that meet the minimum replication factor for the file they belong to.
+Over-replicated blocks: these are blocks that exceed their target replication for the file they belong to. Normally, over-replication is not a problem, and HDFS will automatically delete excess replicas.
+Under-replicated blocks: these are blocks that do not meet their target replication for the file they belong to. HDFS will automatically create new replicas of under-replicated blocks until they meet the target replication. You can get information about the blocks being replicated (or waiting to be replicated) using 'hdfs dfsadmin -metasave'.
+Mis-replicated blocks: these are blocks that do not satisfy the block replica placement policy. For example, for a replication level of three in a multirack cluster, if all three replicas of a block are on the same rack, then the block is mis-replicated because the replicas should be spread across at least two racks for resilience. HDFS will automatically re-replicate mis-replicated blocks so that they satisfy the rack placement policy.
+Corrupt blocks: these are blocks whose replicas are all corrupt. Blocks with at least one non-corrupt replica are not reported as corrupt; the NameNode will replicate the non-corrupt replica until the target replication is met.
+Missing replicas: these are blocks with no replicas anywhere in the cluster. Corrupt or missing blocks are the biggest cause for concern, as they mean data has been lost.
+
 ## HDFS encryption
 hadoop key list # List encryption keys
 hadoop key create mykey # Create new HDFS encryption key "mykey"
@@ -67,7 +75,7 @@ yarn logs -applicationId application_1392918622651_0004  # View logs
 – Each archive has the configuration files needed to access the service
 – Example: a MapReduce client configura-on file contains copies of core-site.xml, hadoop-env.sh, hdfs-site.xml,log4j.properties and mapred-site.xml
 
-# Cloudera Manager decouples serverand client configurations
+# Cloudera Manager decouples server and client configurations
 – Server settings (e.g., NameNode,DataNode) are stored in/var/run/cloudera-scm-agent/process subdirectories
 – Client settings are stored in /etc/hadoop subdirectories
 
