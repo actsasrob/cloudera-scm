@@ -110,6 +110,13 @@ MapReduce Job History Server log directory Default: /var/log/hadoop-mapreduce
 hadoop-<user-running-hadoop>-<daemon>-<hostname>.log
 /etc/hadoop/conf/log4j.properties  # Logging configuration file
 
+# KeyTrustee/KMS/NavEncrypt:
+/var/run/cloudera-scm-agent/process/<pid>-keytrustee-KMS_KEYTRUSTEE/logs/
+/var/log/kms-keytrustee/
+
+
+
+
 Beeline:
 # Use Cloudera Impala JDBC driver to connect to Impala via beeline examples
 1) Unzip the Cloudera Impala JDBC zip file.
