@@ -510,3 +510,96 @@ mail,news.none /var/log/messages
 
 # Log all messages using kern facility to console
 kern.* /dev/console
+
+# KeyTrustee Install/Configure
+[root@keytrustee ~]$ vi CentOS-Base.repo 
+   Add "exclude=python-psycopg2*" to [base] section of CentOS-Base.repo
+
+sudo yum install http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-redhat93-9.3-1.noarch.rpm
+yum install keytrustee-server.x86_64 
+yum install haveged
+createuser --version # this should be run after you install keytrustee-server
+service haveged start
+chkconfig postgresql-9.3 on
+chkconfig keytrusteed on
+chkconfig postfix on
+
+# Fix entropy issue with vagrant VM:
+cat /proc/sys/kernel/random/entropy_avail
+sudo yum install rng-tools
+sudo vi /etc/sysconfig/rngd 
+   Add EXTRAOPTIONS="-r /dev/urandom"
+sudo /etc/init.d/rngd start
+   
+   
+
+[vagrant@keytrustee ~]$ sudo su - keytrustee
+[keytrustee@keytrustee ~]$ /usr/bin/ktadmin init --logdir /var/log/keytrustee
+echo "4096R/1C1932B7903092A6FAF4B6028A36CD7B3CDDD99B"
+/usr/bin/ktadmin --confdir /var/lib/keytrustee/.keytrustee db --port 11381 --bootstrap --pg-rootdir /var/lib/keytrustee/db
+logout
+[vagrant@keytrustee ~]$ sudo service keytrusteed start
+curl -sk https://$(hostname):11371/?a=fingerprint
+## Manually restart PostgreSQL
+sudo /usr/pgsql-9.3/bin/pg_ctl -D /var/lib/keytrustee/db start
+or
+sudo /usr/bin/ktadmin db --start --pg-rootdir /var/lib/keytrustee/db --background
+
+sudo /usr/lib/keytrustee-server/orgtool add -n cloudera -c yourname@cloudera.com
+sudo -u keytrustee /usr/lib/keytrustee-server/orgtool list
+Dropped privileges to keytrustee
+{
+    "cloudera": {
+        "auth_secret": "WUtZOPlrS17A5waY9PZFUA==",
+        "contacts": [
+            "yourname@cloudera.com"
+        ],
+        "creation": "2014-12-08T11:40:45",
+        "expiration": "9999-12-31T17:59:59",
+        "key_info": null,
+        "name": "cloudera",
+        "state": 0,
+        "uuid": "mCdVH7lheJy2QtXL5gyYXOfxMrTEgSQKs9DTi3WtwNC"
+    }
+}
+
+# Registering the navencrypt client
+sudo yum install navencrypt -y
+
+[vagrant@navencrypt ~]$ sudo navencrypt register -s keytrustee.cloudera.dev --org cloudera --auth Sv5aET90+JoUkLP9psirPQ== --skip-ssl-check
+sudo mkdir -pv /encrypt/storage /encrypt/mount
+sudo navencrypt-prepare /encrypt/storage /encrypt/mount
+df -hT
+mount| grep encrypt
+ls /secrets
+cat /secrets/secret-1
+sudo navencrypt-move encrypt @secrets /secrets /encrypt/mount
+ls -l /secrets
+cat /secrets/secret-39
+sudo ls /encrypt/storage/secrets/secrets/
+sudo strings /encrypt/storage/secrets/secrets/secret-39
+sudo file /encrypt/storage/secrets/secrets/secret-39
+sudo navencrypt acl --add --rule "ALLOW @secrets * /bin/cat"
+sudo navencrypt acl --list
+
+28  dmesg | grep crypt > /tmp/deny-messages
+vi /tmp/deny-messages # Edit/remove deny messages you don't care about
+# Generate ACL rules to allow access
+sudo navencrypt deny2allow /tmp/deny-messages 
+sudo navencrypt acl --add --rule "ALLOW @secrets * /usr/bin/less" # Add the ACL rules
+sudo less /secrets/secret-39
+
+sudo navencrypt acl --list
+sudo navencrypt acl --del --line 2  # Delete an ACL rule by number
+
+# Generate an ACL for a process
+[vagrant@navencrypt ~]$ ps -ef | grep ntpd | grep -v grep
+ntp       1217     1  0 17:21 ?        00:00:00 ntpd -u ntp:ntp -p /var/run/ntpd.pid -g
+sudo navencrypt-profile -p 1217 > /tmp/ntpd_profile.txt
+which ntpd
+sudo navencrypt acl --add --rule "ALLOW @ntpd * /usr/sbin/ntpd" --profile-file=/tmp/ntpd_profile.txt 
+sudo navencrypt acl --list --all # Use --all option to --list to see ACL rules for process profiles
+sudo navencrypt acl --update  # Update fingerprints for binaries that have changed
+
+
+   
