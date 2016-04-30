@@ -1,0 +1,5 @@
+http://www.cloudera.com/documentation/director/latest/topics/director_aws_setup_client.html
+http://www.cloudera.com/documentation/director/latest/topics/director_deployment_requirements.html
+http://www.cloudera.com/documentation/director/latest/topics/director_get_started_aws_install_cm_cdh.html
+http://www.cloudera.com/documentation/director/latest/topics/director_deployment_start_launcher.html
+Good base AMI: RHEL 6.7 HVM. ami-0d28fe66

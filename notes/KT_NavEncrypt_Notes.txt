@@ -1,0 +1,269 @@
+
+https://wiki.cloudera.com/display/COPS/navencrypt+Encrypt+Quick+Reference
+
+### KeyTrustee
+
+# High-level Installation Steps:
+http://www.cloudera.com/documentation/enterprise/5-5-x/topics/key_trustee_install.html#xd_583c10bfdbd326ba-590cb1d1-149e9ca9886--7b84
+
+http://www.cloudera.com/documentation/enterprise/5-5-x/topics/key_trustee_initialize_ha.html#concept_key_trustee_ha
+
+# Do the following on both active and passive KT servers:
+sudo yum install http://mirrors.rit.edu/fedora/epel/6/x86_64/epel-release-6-8.noarch.rpm
+sudo yum repolist | grep -i epel
+sudo subscription-manager repos --enable=rhel-7-server-extras-rpms  # On RHEL7 ONLY.
+Append "exclude=python-psycopg2*" to end of /etc/yum.repos.d/CentOS-Base.repo file # CentOS ONLY.
+sudo yum install http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-redhat93-9.3-1.noarch.rpm
+sudo yum install https://archive.cloudera.com/cdh5/redhat/6/x86_64/cdh/cloudera-cdh5.repo
+wget https://archive.cloudera.com/cdh5/redhat/6/x86_64/cdh/cloudera-cdh5.repo
+sudo mv cloudera-cdh5.repo /etc/yum.repos.d/
+sudo yum clean all
+sudo rpm --import https://archive.cloudera.com/cdh5/redhat/6/x86_64/cdh/RPM-GPG-KEY-cloudera
+sudo yum -y install ntp 
+sudo service ntpd start ## For RHEL/CentOS 7, use 'sudo systemctl start ntpd' instead ##
+sudo yum -y install rng-tools  # Or haveged
+sudo vi /etc/sysconfig/rngd  # add EXTRAOPTIONS="-r /dev/urandom"
+sudo service ntpd start ## For RHEL/CentOS 7, use 'sudo systemctl start rngd' instead ##
+cat /proc/sys/kernel/random/entropy_avail # Verify entropy is above 500
+sudo yum install keytrustee-server
+sudo yum localinstall keytrustee-server-5.5.2+5.2.0-1.cdh5.5.2.p0.16.el6.x86_64.rpm python-keytrustee-5.5.2+5.2.0-1.cdh5.5.2.p0.16.el6.x86_64.rpm
+sudo chkconfig keytrusteed on
+sudo chkconfig keytrustee-db on
+sudo chkconfig keytrustee-ntpd on
+sudo chkconfig ntpd on
+
+## Initialize KT servers
+
+# On KT Active. 
+ sudo ktadmin init --external-address kt-active.robhughes.net
+# Sync the /var/lib/keytrustee/.keytrustee directory contents (minus .ssl dir) 
+#   from KT Active to KT Passive servers.
+sudo rsync -zav --exclude .ssl /var/lib/keytrustee/.keytrustee root@kt-passive.robhughes.net:/var/lib/keytrustee/.
+sudo ktadmin db --bootstrap --port 11381 --pg-rootdir /var/lib/keytrustee/db --slave kt-passive.robhughes.net
+sudo service keytrustee-db stop  ## For RHEL/CentOS 7, use 'sudo systemctl [stop|start] <service_name>'
+sudo service keytrustee-db start
+sudo service keytrusteed start
+
+# On KT Passive server do:
+sudo ktadmin init-slave --master kt-active.robhughes.net --pg-rootdir /var/lib/keytrustee/db --no-import-key --no-start
+sudo service keytrustee-db start
+sudo service keytrustee-db start ## For RHEL/CentOS 7, use 'sudo systemctl [stop|start] <service_name>'
+sudo ktadmin init --external-address keytrustee02.example.com
+sudo service keytrusteed start
+
+# On KT Active. 
+# Enable Synchronous Replication
+sudo ktadmin enable-synchronous-replication --pg-rootdir /var/lib/keytrustee/db
+
+# Add organization
+sudo keytrustee-orgtool add -n <name of org> -c <comma delimited list of contacts> # e.g.
+sudo keytrustee-orgtool add -n robhughes_net -c rob@robhughes.net
+
+# List organizations and auth secrets:
+sudo  keytrustee-orgtool list
+
+# Set or remove auth secret for an organization.
+keytrustee-orgtool set-auth -n disaster-recov -s ""
+
+
+### NavEncrypt
+
+# High-level Installation Steps:
+sudo yum -y install kernel-headers-$(uname -r) kernel-devel-$(uname -r)
+sudo yum -y install http://pkgs.repoforge.org/dkms/dkms-2.1.1.2-1.el6.rf.noarch.rpm # Can also use dkms from epel repo.
+sudo yum -y navencrypt libkeytrustee navencrypt-kernel-module
+sudo yum -y localinstall navencrypt-3.8.0_rhel6-191.x86_64.rpm libkeytrustee-3.10.0.41_rhel6-1.x86_64.rpm navencrypt-kernel-module-3.8.0_rhel6-191.x86_64.rpm
+sudo yum -y install ntp rng-tools  # Or haveged
+sudo vi /etc/sysconfig/rngd  # add EXTRAOPTIONS="-r /dev/urandom"
+sudo service rngd start
+cat /proc/sys/kernel/random/entropy_avail # Verify entropy is above 500
+sudo chkconfig --level 235 navencrypt-mount on
+sudo chkconfig --level 235 ntpd on
+
+# verify NavEncrypt kernel module exists
+lsmod | grep navencrypt
+modinfo navencryptfs
+
+# RHEL/CentOS 6 and Ubuntu 10.04, 12.04, 14.04
+sudo service navencrypt-mount status
+/dev/xvdb1 is active.
+  mapper:  /dev/mapper/secured_mountpoint
+  type:  LUKS1
+  cipher:  aes-cbc-plain
+  keysize: 256 bits
+  device:  /dev/xvdb1
+  offset:  4096 sectors
+  size:    104851423 sectors
+  mode:    read/write
+ 
+# RHEL/CentOS 5 (or if the above command doesn't work)
+sudo /etc/init.d/navencrypt-mount status
+
+### Registration
+To register a client, you can use the following command:
+sudo navencrypt register \
+    --server=<URL> \ # key trustee server hostname, ie https://kt-active.gazzang.net
+    --passive-server=<URL> \ # passive key trustee server, ie https://kt-passive.gazzang.net 
+    --port=<port> \ # Default port 11371
+    --org [organization] \ # Key Trustee Organization to register against.
+    --auth=[authorization code] \ # Auth secret from key trustee server for organization
+    [ --skip-ssl-check ] # Use if self-signed certs are used.
+
+### Encrypting - Creating New Encrypted Partitions
+# In order to encrypt any data, you will need a place to store the encrypted data. You can create the encrypted file system with:
+sudo navencrypt-prepare [storage] [mount]
+# NOTE: You can run navencrypt-prepare with no parameters which will result in interactive mode.
+# NOTE: [mount] is a directory where the underlying storage will be mounted to. The directory must exist.
+# NOTE: if [storage] is a directory then the encryption type will default to ecryptfs. 
+#       Red Hat has deprecated use of ecrpytfs in RHEL7
+#       For file-level encryption, the `storage` and `mount` targets will 
+#          just be directories: e.g. sudo navencrypt /storage-dir /mount-dir
+#       if [storage] is a partitioned device navencrypt will display a warning with instructions to
+#          clear device header before re-running command. clearing partitions and re-running command
+#          will result in navencrypt choosing dm-crypt (LUKS) block-level encryption type.
+#       if [storage] is an unpartitioned device navencrypt to select the dm-crypt encryption type
+#          which is probably what you want. e.g.
+#       For block-level encryption, the `storage` will be a raw block device 
+#          or LVM partition
+navencrypt-prepare /dev/xvdb /encrypted/mount
+
+### Encrypting Data
+To encrypt data, you will need to move it into the respective encrypted partition. This can be done manually (using Navigator Encrypt's `permissive` or `admin` mode), or by using the `navencrypt-move` command:
+# A brief command overview:
+# navencrypt-move encrypt \
+#   @<ACL category name> \ # e.g. @dbsecure
+#   <target dir> \  # e.g. /var/lib/mysql
+#   <which encrypted partition to use for storage>  # e.g. /secured_mountpoint
+sudo navencrypt-move encrypt @dbsecure /var/lib/mysql /secured_mountpoint
+ 
+# Manual move
+sudo navencrypt set --mode=admin
+mkdir -p /data/dfs/encrypted/mount/hadoop/data/dfs/dn
+mv /data/dfs/dn /data/dfs/encrypted/mount/hadoop/data/dfs/
+ln -s /data/dfs/dn /data/dfs/encrypted/mount/hadoop/data/dfs/dn
+
+### Setting ACLs
+http://www.cloudera.com/documentation/enterprise/5-5-x/topics/navigator_encrypt_acl.html
+
+### Adding
+To add a new ACL rule:
+# Brief command overview:
+# navencrypt acl \
+#   --add \
+#   --rule="ALLOW @<name of acl set> * <full path to binary needing access>"
+ 
+# For a Hadoop ACL rule (you will need to change the `java` portion)
+sudo navencrypt acl --add --rule="ALLOW @hadoop * /usr/lib/jdk/bin/java"
+ 
+# For MySQL
+sudo navencrypt acl --add --rule="ALLOW @mysql * /usr/sbin/mysqld"
+
+# The following example shows how to add multiple rules using a policy file:
+sudo /usr/sbin/navencrypt acl --add --file=/mnt/private/acl_rules
+# The contents of the policy file should contain one rule per line. For example:
+ALLOW @mysql * /usr/sbin/mysqld
+ALLOW @log * /usr/sbin/mysqld
+ALLOW @apache * /usr/lib/apache2/mpm-prefork/apache2
+Using a policy file is the fastest way to add multiple rules because it only requires the security key one time.
+
+# It is also possible to overwrite the entire current rules set with the option --overwrite. When this command is 
+#    executed, all current rules are replaced by the ones specified in the file that contains the new set of rules. 
+#    It is recommended to save a copy of your current set of rules by printing it with the option --print.
+
+# Here is an example command using the --overwrite option:
+sudo /usr/sbin/navencrypt acl --overwrite --file=/mnt/private/acl_rules
+
+# Adding ACL Rules for scripts: (see above URL for more detail)
+ALLOW @scripts * /root/script.sh --shell=/bin/bash
+ALLOW @scripts * /root/script.sh --shell=/bin/bash --children=/bin/df
+ALLOW @scripts * /root/script.sh --shell=/bin/bash --children=/bin/df,/bin/ls
+sudo /usr/sbin/navencrypt acl --add --rule="ALLOW @mysql * /usr/bin/mysqld_safe \
+--shell=/bin/bash --children=/bin/df,/bin/ls"
+
+# Adding ACL Rules by Profile: (see above URL for more detail)
+# If your environment requires more granular controls on the processes that can access the data, you can add 
+#    extra controls by using profiles. Profiles set requirements on a process other than just having the correct 
+#    fingerprint. They can include such things as process owner and group, required open files, and the current 
+#    working directory. To see more about adding rules by profile, see ACL Profile Rules.
+sudo /usr/sbin/navencrypt-profile --pid=<pid> > /path/to/profile/file
+sudo /usr/sbin/navencrypt acl --add --rule="ALLOW @mysql * /usr/sbin/mysqld" \
+–-profile-file=/path/to/profile/file
+
+### Listing - To list existing ACLs:
+sudo navencrypt acl --list --all  # Use --all display process based ACLs
+
+### Updating -- To update an ACL rule (if a binary fingerprint changes. For instance if a new version of binary is installed):
+sudo navencrypt acl --update
+
+### Removing -To remove an ACL:
+# Find the ACL to remove (the ACL number)
+sudo navencrypt acl --list
+ 
+# Remove it (where 1 is the ACL we want to remove)
+sudo navencrypt acl --del -n 1
+
+### If you don't know what binary will need to be added, you can use Navigator Encrypt's `permissive` mode to help:
+# Go into permissive mode:
+sudo navencrypt set --mode=permissive
+ 
+# Update CDH, start data node services
+ 
+# Find the new binary. The output should be a list of all processes 
+# that have accessed the encrypted partitions since last reboot.
+sudo dmesg > /tmp/dmesg.out && navencrypt deny2allow /tmp/dmesg.out
+ 
+# Add the new rule
+sudo navencrypt acl --add --rule="ALLOW @hadoop * /path/to/new/java"
+ 
+# Go back into enforcing
+sudo navencrypt set --mode=enforcing
+
+### Where are my encrypted partitions?
+# The specific locations for all encrypted partitions can be identified by taking a look at the /etc/navencrypt/ztab file.
+cat /etc/navencrypt/ztab
+
+### What key server am I registered against?
+# The hostname/IP of the key server can be determined by running the following command.
+sudo cat /etc/navencrypt/keytrustee/ztrustee.conf  |   awk  '/REMOTE_SERVER/ { print $2 }'
+
+### Removing Navigator Encrypt - Decryption
+# Data decryption is usually very simple. The only catch is that you will need to know what data was originally 
+#  encrypted. Unfortunately there is not a way to do this without knowing the original encryption target. 
+#  Assuming you know what data to decrypt, you can run:
+#    Where `/data/dfs/dn` was the original target of encryption (there should be a symlink at that location)
+sudo navencrypt-move decrypt /data/dfs/dn
+
+### Uninstallation - To fully uninstall the Navigator Encrypt client, you can use the following commands:
+# Stop the Navigator Encrypt service (IMPORTANT)
+sudo service navencrypt-mount stop
+ 
+# Amazon/CentOS/RHEL
+yum remove navencrypt navencrypt-kernel-module libztrustee
+ 
+# Ubuntu/Debian
+apt-get purge navencrypt navencrypt-kernel-module libztrustee
+ 
+# Optional housekeeping (for all distributions)
+rm -rf /etc/navencrypt
+
+Troubleshooting:
+On navencrypt client:
+  curl -k https://<key trustee server>:11371/?a=fingerprint  # Ping key trustee server
+    e.g. curl -k https://kt.robhughes.net:11371/?a=fingerprint
+  Verify navencryptfs module is loaded:
+    lsmod | grep navencrypt
+    modinfo navencryptfs
+  Verify navencrypt-mount service is running:
+    sudo service navencrypt-mount status
+  df -hT or mount command output to verify expected file systems are mounted.
+  dmesg output
+
+On key trustee server:
+/var/lib/keytrustee/.keytrustee  # keytrustee config directory. gpg keys
+/var/lib/keytrustee/logs  # keytrustee logs. DB startup log.
+/var/lib/keytrustee/db/  # Default PostgreSQL DB directory
+/var/lib/keytrustee/db/pg_log/*  # PostgreSQL log files
+dmesg output
+/var/log/messages output
+
+
