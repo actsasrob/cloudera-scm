@@ -3,7 +3,11 @@
 Important that at least one copy of the NameNode's metadata is stored on a separate machine in case of catastrophic failure.
 -Or use JournalNode quorum (odd number. Three or greater).
 
-
+HDFS Memory Settings:
+- Ideal heap size will vary by use case
+- Recommended to reserve 3GB of available memory for the OS
+- NameNode – 1GB per million blocks (recommended minimum 4GB)
+- DataNode – 1GB min, 4GB max
 
 WORKER NODES:
 
@@ -145,8 +149,43 @@ DNS is preferred for hostname resolution (rather than /etc/hosts)
 Forward and reverse lookups must work correctly whether you are using DNS or /etc/hosts for name resoluAon
  If the results do not match, major problems can occur
 
+## Resource Management
+Dynamic Resource Pools are the recommended method to configure the Fair Scheduler
 
-OS Configuration:
+## YARN Configuration Tuning
+Inventory the vcores, memory, and disks available on each worker node
+# Calculate the resources needed for other processes
+– Reserve 3GB or 20% of total memory for the OS
+– Reserve resources for any non-Hadoop applicaFons
+– Reserve resources for other any Hadoop components
+– HDFS caching (if configured), NodeManager, DataNode
+– Impalad, HBase RegionServer, Solr, etc.
+# Grant the resources not used by the above to your YARN containers
+# Configure the YARN scheduler and application framework settings
+– Based on the worker node profile determined above
+– Determine the number of containers needed to best support YARN applicaFons based on the type of workload
+– Monitor usage and tune esFmated values to find optimal settings
+
+## Namenode Configuration:
+HDFS NameNode Metadata Location:
+For all HDFS deployments, dfs.namenode.name.dir must specify at least two disks (or a RAID volume) on the NameNode
+– Failure to set correctly will result in eventual loss of your cluster’s data
+# By default, a NameNode will write to the edit log files in all directories in dfs.namenode.name.dir synchronously
+– For non-HA HDFS deployments, can explicitly specify the path to the edits log directory by seSng dfs.namenode.edits.dir
+– High-Availability HDFS seSngs are discussed in a later chapter
+# If a directory in the list disappears, the NameNode will con1nue to function
+– It will ignore that directory un-l it is restarted
+
+# Loss of a NameNode’s metadata will result in the effec1ve loss of all the data in its namespace
+– Although the blocks will remain, there is no way of reconstructing the original files without the metadata
+
+# For non-HA HDFS deployments, dfs.namenode.name.dir must additionally specify an NFS mount elsewhere on the network
+– If you do not do this, catastrophic failure of the NameNode will result in the loss of the metadata
+#  Recommenda1on for the NFS mount point tcp,soft,intr,timeo=10,retrans=10
+– So[ mount so the NameNode will not hang if the mount point disappears
+– Will retry transac-ons 10 -mes, at 1-10 second intervals, before being deemed to have failed
+
+## OS Configuration:
 
 Increase the nofile ulimit for the cloudera-scm user to at least 32K
  Cloudera Manager sets this to 32K in /usr/sbin/cmf-agent by default
@@ -201,7 +240,7 @@ Disable Transparent Huge Page compaction
  echo never > defrag_file_pathname
 
 Configure ntp daemon across cluster. More important for synchronized clocks across servers than setting correct time.
-Disable IPv6 (really just don’t disable IPv4).
+Disable IPv6 (really just don't disable IPv4).
 
 
 Filesystem Considerations:

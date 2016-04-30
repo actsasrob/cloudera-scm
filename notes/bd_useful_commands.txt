@@ -6,15 +6,99 @@ yarn application -list -appStates FINISHED # Get list of apps that have finished
    Now run this command (where appId is the actual application ID).
 yarn logs -applicationId <appId> | less
 
-sudo find /data/nn/ -name "*<BLK_ID>*"  # Find actual file containing data block on DataNode
-                                        # NOTE: Assume file system prefix of /data/nn.
+sudo find /data/dn/ -name "*<BLK_ID>*"  # Find actual file containing data block on DataNode
+                                        # NOTE: Assume file system prefix of /data/dn.
 
+# DFS Commands
+# Use sudo -u <hdfs admin user> for these commands
+sudo -u hdfs hdfs dfsadmin -safemode enter # Set filesystem to read-only mode. No replication or deletes.
+hdfs dfsadmin -safemode leave
+hdfs dfsadmin -safemode wait  # Command blocks until safemode exits. Useful for scripts
+hdfs dfsadmin -saveNamespace # Save Namenode metadata to disk. Reset edits log.
+                             # Note: Must be in safemode
+hdfs dfsadmin -allowSnapshot <directory>  # Enable snapshots for directory
+hdfs dfsadmin -report # Report information about DFS filesystem
+hdfs hdfs dfsadmin -printTopology # Print HDFS cluster topology
+hdfs dfsadmin -refreshNodes  # Re-read dfs.hosts and dfs.hosts.exclude files
+hdfs fsck / -files -blocks -locations -racks # List info about HDFS files.
+hdfs fsck / -file -block -locations -openforwrite # include files opened for write
+hdfs fsck / -list-curruptfilesblocks # list of missing blocks and files they belong to
+hdfs getconf -namenodes # List NameNodes for cluster
+hdfs getconf -confKey dfs.blocksize   # Get default cluster DFS blocksize
+hadoop fs -stat %o hdfs://localhost/user/harsh/file.txt    # Get DFS blocksize for a file
 
-Cloudera Hadoop/HDFS Logs:
+# hdfs fsck - description of output rows:
+Minimally replicated blocks: these are blocks that meet the minimum replication factor for the file they belong to.
+Over-replicated blocks: these are blocks that exceed their target replication for the file they belong to. Normally, over-replication is not a problem, and HDFS will automatically delete excess replicas.
+Under-replicated blocks: these are blocks that do not meet their target replication for the file they belong to. HDFS will automatically create new replicas of under-replicated blocks until they meet the target replication. You can get information about the blocks being replicated (or waiting to be replicated) using 'hdfs dfsadmin -metasave'.
+Mis-replicated blocks: these are blocks that do not satisfy the block replica placement policy. For example, for a replication level of three in a multirack cluster, if all three replicas of a block are on the same rack, then the block is mis-replicated because the replicas should be spread across at least two racks for resilience. HDFS will automatically re-replicate mis-replicated blocks so that they satisfy the rack placement policy.
+Corrupt blocks: these are blocks whose replicas are all corrupt. Blocks with at least one non-corrupt replica are not reported as corrupt; the NameNode will replicate the non-corrupt replica until the target replication is met.
+Missing replicas: these are blocks with no replicas anywhere in the cluster. Corrupt or missing blocks are the biggest cause for concern, as they mean data has been lost.
 
-When YARN log aggregatoon is enabled: Container log files are moved from NodeManager hosts'
+## HDFS encryption
+hadoop key list # List encryption keys
+hadoop key create mykey # Create new HDFS encryption key "mykey"
+hdfs crypto -listZones # List encryption zones
+# Create new HDFS encryption zone using key "mykey" and path "/test/encr/place"
+hdfs crypto -createZone -keyName mykey -path /test/encr/place
+hdfs fs -rm -r -f -skipTrash /test/encr/place # Remove an encryption zone
+
+# Moving Data Between encrypted and unencrypted directories
+# It is not possible to use the hadoop fs -mv option to migrate data between encrypted and unencrypted paths
+#   or from one encryption zone to another. Instead, a distcp must be run to copy the data.  The -skipcrccheck
+#   -update options to distcp are required.
+
+##distcp
+# Copying data from one cluster to another
+– hadoop distcp hdfs://cluster1_nn:8020/path/to/src hdfs://cluster2_nn:8020/path/to/dest
+# Copying data within the same cluster
+– hadoop distcp /path/to/src /path/to/dest
+# Copying data from one cluster to another when the clusters are running different versions of Hadoop
+– HA HDFS example using HApFS
+– hadoop distcp hdfs://mycluster/path/to/src webhdfs://httpfs-svr:14000/path/to/dest
+– Non-HA HDFS example using WebHDFS
+– hadoop distcp hdfs://cluster1_nn:8020/path/to/src webhdfs://cluster2_nn:50070/path/to/dest
+
+# yarn CLI commands:
+yarn application –list all  # view all applicaHons on the cluster, including completed applications
+yarn application –status <application_ID> # To display the status of an individual application
+yarn application –kill <application_ID>
+yarn application -list -appStates FINISHED | grep 'word count' # Look up application ID
+yarn logs -applicationId application_1392918622651_0004  # View logs
+
+## Cloudera Configuration: Configuration for daemon processes can be found under sub-directories of ../process/
+– A subdirectory of: /var/run/cloudera-scm-agent/process/
+
+# Cloudera Manager stores client configura1ons separately from service configurations
+– Default location: /etc/hadoop/conf
+# Cloudera Manager creates a “client configura1on file” zip archive of the configuration files containing service properties
+– Each archive has the configuration files needed to access the service
+– Example: a MapReduce client configura-on file contains copies of core-site.xml, hadoop-env.sh, hdfs-site.xml,log4j.properties and mapred-site.xml
+
+# Cloudera Manager decouples server and client configurations
+– Server settings (e.g., NameNode,DataNode) are stored in/var/run/cloudera-scm-agent/process subdirectories
+– Client settings are stored in /etc/hadoop subdirectories
+
+## Cloudera Hadoop/HDFS Logs:
+
+When YARN log aggregation is enabled: Container log files are moved from NodeManager hosts'
 /var/log/hadoop-yarn/container directories to HDFS when the application completes
-- Default HDFS directory: /tmp/logs
+- Default HDFS directory: /tmp/logs # Per-user directories created under this dir. e.g. /tmp/logs/rob/log/
+
+# Tools tend to log to: /var/log/<tool/service e.g. /var/log/flume-ng
+# Exceptions: See accumulo section below. Also check /var/log/cloudera-scm-agent/supervisord.log log for useful info.
+/var/log/hive  # HiveServer2 and Metastore server
+/var/log/hcatalog   # Hive HCatalog server
+/var/log/impalad, /var/log/statestore, /var/log/catalogd # Impala
+/var/log/accumulo: gc_<server_name>.log, master_<server_name>.log, monitor_<server_name>.log, tracer_<server_name>.log, tserver_<server_name>.log, /var/run/cloudera-scm-agent/process/<latest>-accumulo16-ACCUMULO16_GC/logs
+e.g. master_quickstart.cloudera.log
+accumulo-gc.out, accumulo-master.out, accumulo-monitor.out, accumulo-tracer.out, accumulo-tserver.out
+
+MapReduce V2:
+/var/log/hadoop-hdfs # datanode, namenode, journalnode
+/var/log/hadoop-yarn # nodemanager, resourcemanager
+/var/log/hadoop-mapreduce # jobhistory server
+
 MapReduce jobs produce the following logs:
 - ApplicationMaster log
 - stdout, stderr, and syslog output for each Map and Reduce task
@@ -22,6 +106,228 @@ MapReduce jobs produce the following logs:
 - Counters
 MapReduce Job History Server log directory Default: /var/log/hadoop-mapreduce
 
+# Cloudera Hadoop daemon logs are named:
+hadoop-<user-running-hadoop>-<daemon>-<hostname>.log
+/etc/hadoop/conf/log4j.properties  # Logging configuration file
+
+# KeyTrustee/KMS/NavEncrypt:
+/var/run/cloudera-scm-agent/process/<pid>-keytrustee-KMS_KEYTRUSTEE/logs/
+/var/log/kms-keytrustee/
+
+
+
+
+Beeline:
+# Use Cloudera Impala JDBC driver to connect to Impala via beeline examples
+1) Unzip the Cloudera Impala JDBC zip file.
+2) Set the HIVE_AUX_JARS_PATH env var to comma delimited path to all jar files in the exploded zip file
+3a) hive --service beeline -u "jdbc:impala://<server>:21050/<database>;AUTH_MECH=3" -n <username> -p <password>
+3b) beeline -u "jdbc:impala://<server>:21050/<database>;AUTH_MECH=3" -n <username> -p <password>
+Note: beeline script eventually invokes "hive --service beeline".
+      The hive script sets CLASSPATH to include all the jars needed for hive. It will override the CLASSPATH env var.
+beeline -u "jdbc:impala://<server>:21050/<database>;AUTH_MECH=0"  # No username/password needed to connect
+beeline -u "jdbc:impala://<server>:21050/<database>;auth=noSasl"  # No username/password needed to connect
+beeline -u "jdbc:hive2://<server>:21050/<database>;auth=noSasl"  # Use the hive driver
+hive --service beeline -u 'jdbc:impala://<server>:21050/;AuthMech=3;SSL=1;SSLTrustStore=/tmp/myTrustStore;SSLTrustStorePwd=password;AllowSelfSignedCerts=1;' -n username -p password # Connect over SSL with self-signed server and username/password
+
+NOTE: To use "LOAD DATA [LOCAL] INPATH..." in Beeline you must be logged into the HiveServer2 server.
+
+Spark:
+# Spark can	write	application history logs to HDFS. Default:	enabled	
+# Spark	application	history. Default	location in HDFS: /user/spark/applicationHistory
+# Find	and	view	the	logs	from	the	command	line:	
+$ sudo –u hdfs hdfs dfs /user/spark/applicationHistory
+$ sudo –u hdfs hdfs dfs –cat /user/spark/application_<application_id>/EVENT_LOG_1
+# Spark	History	Server	log	directory # Default: /var/log/spark
+
+
+MapReduce v1:
+# Jobtracker created XML job configuration files:
+/var/log/hadoop and /var/log/hadoop/history. #The XML file describes the job configuration.
+The /hadoop file names are constructed as follows: job_<job_ID>_conf.xml. e.g. job_200908190029_0001_conf.xml
+The /hadoop/history file names are constructed as follows: <hostname>_<epoch-of-jobtracker-start>_<job-id>_conf.xml
+        e.g. ec2-72-44-61-184.compute-1.amazonaws.com_1250641772616_job_200908190029_0001_conf.xml
+# Job Statistics - Jobtracker created runtime statistics from jobs to these files. Those statistics include task 
+#   attempts, time spent shuffling, input splits given to task attempts, start times of tasks attempts and other information.
+#The statistics files are named: <hostname>_<epoch-of-jobtracker-start>_<job-id>_<job-name>
+   e.g. ec2-72-44-61-184.compute-1.amazonaws.com_1250641772616_job_200908190029_0002_hadoop_test-mini-mr
+# Standard Error for a particular task attempt. - These logs are created by each tasktracker. They contain information 
+#   written to standard error (stderr). /var/log/hadoop/userlogs/attempt_<job-id>_<map-or-reduce>_<attempt-id>
+# Standard Out for a particular task attempt.
+#log4j informational messages from within the task process
+#  These logs contains anything that log4j writes from within the task process. This includes some Hadoop internal 
+#  diagnostic info. If the job’s mapper or reducer implementations include call such as LOG.info(), then that output 
+#  also get written here. Messages can include information about the task, such as how big its record buffer was or 
+#  how many reduce tasks there are.
+
+# jobtracker
+/var/log/hadoop
+              /hadoop-* =&gt; daemon logs
+              /job_*.xml =&gt; job configuration XML logs
+              /history
+                     /*_conf.xml =&gt; job configuration logs
+                     &lt; everything else &gt; =&gt; job statistics logs
+# namenode/secondary namenode
+/var/log/hadoop
+              /hadoop-* =&gt; daemon logs
+# datanode
+/var/log/hadoop
+              /hadoop-* =&gt; daemon logs
+# tasktracker
+/var/log/hadoop
+              /hadoop-* =&gt; daemon logs
+              /userlogs
+                      /attempt_*
+                               /stderr =&gt; standard error logs
+                               /stdout =&gt; standard out logs
+                               /syslog =&gt; log4j logs
+
+
+# Hive/Impala
+create external table ncdc2 (record string) 
+partitioned by (station string, year string)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+LOCATION '/user/rob/output1';
+
+msck repair table ncdc2; # In Hive shell and run following command to make data in paritions visible:
+refresh ncdc2; # Execute in Impala to make table data visible after running above command in Hive
+
+Spark application history location
+– Default location in HDFS: /user/spark/applicationHistory
+– Find and view the logs from the command line:
+– $ sudo –u hdfs hdfs dfs /user/spark/applicationHistory
+– $ sudo –u hdfs hdfs dfs –cat /user/spark/application_<application_id>/EVENT_LOG_1
+# Spark History Server log directory Default: /var/log/spark
+
+# Hue Troubleshooting
+Navigate to the Hue service configuration in Cloudera Manager
+Search for Hue Service Environment Advanced Configuration Snippet (Safety Valve) and add the following:
+DEBUG=true
+DESKTOP_DEBUG=true
+Save and restart Hue service
+Collect the logs from /var/run/cloudera-scm-agent/process/<id>-hue-HUE_SERVER/logs where <id> is the most recently created. (Logs are not stored in /var/log/hue)
+
+# Accumulo
+$ACCUMULO_HOME/bin/accumulo shell -u [username] # Start the shell
+
+root@myinstance> tables # See list of tables
+
+# The compact command instructs Accumulo to schedule a compaction of the table during which files are consolidated and deleted entries are removed.
+root@myinstance mytable> compact -t mytable
+
+#The flush command instructs Accumulo to write all entries currently in memory for a given table to disk.
+root@myinstance mytable> flush -t mytable
+root@myinstance> createtable mytable
+root@myinstance mytable>
+
+root@myinstance mytable> createtable testtable
+root@myinstance testtable>
+
+root@myinstance testtable> deletetable testtable
+deletetable { testtable } (yes|no)? yes
+Table: [testtable] has been deleted.
+
+root@myinstance>
+The Shell can also be used to insert updates and scan tables. This is useful for inspecting tables.
+root@myinstance mytable> scan
+
+# Run a program
+$ACCUMULO_HOME/bin/accumulo classpath
+
+config -t <table> # get default, system, table property overrides
+# Tables can be assigned to namespaces. Properties can then be set at the namespace level and will apply to tables in the
+# namespace.
+user@accumulo> config -f table.file.replication -t ns.test # Display value of setting for a table
+user@accumulo> config -f table.file.replication -ns ns     # Display value of setting for a namespace
+user@accumulo> config -ns ns -s table.file.replication=2   # Override system setting at namespace level
+
+# Precedence of Properties - Properties that are applied more specifically take precedence over those applied more
+# generally. For example, an instance-wide property can be overridden by a namespacespecific
+# property, which itself can be overridden by a table-specific property
+
+# An Accumulo instance consists of all the processes that are participating in the same
+# cluster. It is possible to set instance-wide properties,...e.g.
+user@accumulo> config -f table.file.replication  # See the default setting
+user@accumulo> config -s table.file.replication=1
+
+## Avro/Parquet
+avro-tools tojson <file> # Display contents of Avro file in JSON
+avro-tools totext <file> # Display contents of Avro file as text
+parquet-tools dump <file> # Dump contents of Parquest file
+
+# Kite Troubleshooting/examples
+debug=true kite-dataset info  # Display environment variables used by Kite
+debug=true kite-dataset info users   # Get info about 'users' table and env vars
+
+#!/bin/bash
+set -x
+ZKHOSTS=scm1
+# create partition strategy 
+kite-dataset -v partition-config id:copy -s schema.avsc -o partition.json 
+# create mapping-config 
+kite-dataset -v mapping-config id:key customerName:common customerAddress:common -s schema.avsc \
+     -p partition.json -o mapping.json 
+# create dataset
+kite-dataset create dataset:hbase:$ZKHOSTS/customers --use-hbase -s schema.avsc \
+      --partition-by partition.json --mapping mapping.json 
+      
+#!/bin/bash
+set -x
+ZKHOSTS=scm1
+kite-dataset csv-import customers1.csv  dataset:hbase:$ZKHOSTS/customers --no-header --delimiter '\t'
+
+kite-dataset show dataset:hbase:scm1/customers
+kite-dataset schema dataset:hbase:scm1/customers
+kite-dataset flume-config --channel-type memory dataset:hbase:scm1/customers -o flume_kite.conf
+
+# Access all application logs in Cloudera Manager
+– From the YARN Applications page, choose “Collect diagnostics data”
+– Options to “Download Result Data”, and view recent or full logs
+
+## Cloudera Manager Server/Agents
+# How hostname/host ID Is Determined:
+Determine the ID which the agent is using to identify itself to Cloudera Manager. This is set by three things in 
+descending order of priority: 
+1.listening_hostname (in /etc/cloudera-scm-agent/config.ini)
+Note: This bug in versions before Cloudera Manager 5.5, only occurs if reported_hostname is also set in the same file. Internally tracked as  OPSAPS-27991. 
+2.CMF_AGENT_ARGS='--hostname=cmhost --host_id=cmhost' (in /etc/default/cloudera-scm-agent), where host_id is the value reported
+3./var/lib/cloudera-scm-agent/uuid
+
+# Examine the host in the hosts page in Cloudera Manager. If the Host ID does not match the ID determined above, then 
+  the host will be registering as a different host. If the hostname being reported is the same there will be two entries 
+  in the hosts page, each with a different Host ID but the same hostname.
+
+# Determine the hostname being reported to Cloudera Manager by the agent. This is set by the following, in descending order 
+  of priority: 
+1.reported_hostname (in /etc/cloudera-scm-agent/config.ini)
+2.CMF_AGENT_ARGS='--hostname=cmhost --host_id=cmhost' (in /etc/default/cloudera-scm-agent), where hostname is the value
+  reported
+3.The hostname result of the following command, which asks the operating system what the system's hostname is. This 
+  command also prints the IP address associated with that hostname:
+
+   python -c "import socket; print socket.getfqdn(); print socket.gethostbyname(socket.getfqdn())"
+   
+# See http://www.cloudera.com/content/www/en-us/documentation/enterprise/latest/topics/cm_ag_change_hostnames.html which 
+  defines steps required for hostname changes. 
+
+## How to override environment passed to daemons that are started by Cloudera SCM Agent:
+# e.g. To override the HOSTNAME env var
+1. In /etc/default/cloudera-scm-agent on each server, append the following line: 
+export CMF_AGENT_HOSTNAME=$(hostname -f)
+2. Restart the agent, as root:
+ sudo service cloudera-scm-agent restart
+3. Restart role for any daemons that use the environment variable
+
+## SSL/TLS:
+As of CDH 5.4.x some services still require TLSv1.0, but as of 5.5.3 *all* our services support TLS v1.2, so it would be 
+safe to implement that action after you've upgraded your cluster to CDH 5.5.3 or greater. (Documentation references below)
+
+## Supported Operating Systems, Databases, Supported JDK Versions, Supported Browsers, Supported Internet Protocol, 
+   Supported Transport Layer Security Versions
+   5.4: http://www.cloudera.com/documentation/enterprise/5-4-x/topics/cdh_ig_req_supported_versions.html
+   5.5.3: http://www.cloudera.com/documentation/enterprise/latest/topics/cdh_ig_req_supported_versions.html?scroll=concept_pdd_kzf_vp_unique_1#TLS_Security_Versions_Table_unique_1
+
+## Network troubleshooting commands:
 tcpdump cheat sheet:
 tcpdump [ -AdDefIKlLnNOpqRStuUvxX ] [ expression ]
 
@@ -88,4 +394,212 @@ nc -l 2517    # Listen on port 2517
 nc <host> 2517   # Connect to host on port 2517
 
 
+# Display network activity for a running process
+strace -p <pid> -f -e trace=network -s 10000
 
+## AWS
+# Get instance metadata
+curl http://169.254.169.254/latest/meta-data/ # Get list of latest instance metadata
+curl http://169.254.169.254/latest/meta-data/public-ipv4 # Get public IP address
+
+## Misc:
+sudo du --max-depth=1 --one-file-system --bytes /var/log | sort --numeric
+sudo du --summarize --one-file-system --bytes /var/log/* | sort --numeric
+
+# Cloudera Manager API:
+curl -X POST -u admin:admin 'http://192.168.122.248:7180/api/v11/clusters/Cluster%201/commands/stop'
+curl -u admin:admin 'http://192.168.122.248:7180/api/v11/commands/723'  # Get status for command 723
+  
+# Logging
+# SLF4J - Simple Logging Facade For Java. Provides a Java logging API by means of a simple facade pattern. The underlying 
+#   logging backend is determined at runtime by adding the desired binding to the classpath and may be the standard Sun 
+#   Java logging package java.util.logging,log4j,logback or tinylog.
+# The SLF4J binding provided in this component cause all the SLF4J APIs to be routed to Log4j 2. Simply include the 
+#   Log4j 2 SLF4J Binding jar along with the Log4j 2 jars and SLF4J API jar to cause all SLF4J logging to be handled by 
+#   Log4j 2. 
+
+# Log4J 2. See http://logging.apache.org/log4j/2.x/manual/architecture.html for Log4J 2 architectural overview.
+# A LoggerConfig is said to be an ancestor of another LoggerConfig if its name followed by a dot is a prefix of 
+#   the descendant logger name. A LoggerConfig is said to be a parent of a child LoggerConfig if there are no 
+#  ancestors between itself and the descendant LoggerConfig. 
+
+# LoggerHierarchy. The root LoggerConfig resides at the top of the LoggerConfig hierarchy. It is exceptional in that 
+#   it always exists and it is part of every hierarchy. A Logger that is directly linked to the root LoggerConfig can 
+#   be obtained as follows:
+Logger logger = LogManager.getLogger(LogManager.ROOT_LOGGER_NAME); #Alternatively, and more simply:
+Logger logger = LogManager.getRootLogger();
+
+# LoggerContext. All other Loggers can be retrieved using the LogManager.getLogger static method by passing the name 
+#   of the desired Logger. The LoggerContext acts as the anchor point for the Logging system. However, it is possible 
+#   to have multiple active. LoggerContexts in an application depending on the circumstances.
+
+# Configuration. Every LoggerContext has an active Configuration. The Configuration contains all the Appenders, 
+#   context-wide Filters, LoggerConfigs and contains the reference to the StrSubstitutor. 
+
+# Logger.  Loggers are created by calling LogManager.getLogger. The Logger itself performs no direct actions. It 
+#   simply has a name and is associated with a LoggerConfig. It extends AbstractLogger and implements the required 
+#   methods. As the configuration is modified Loggers may become associated with a different LoggerConfig, thus 
+#   causing their behavior to be modified. 
+Logger x = LogManager.getLogger("wombat");
+
+# Log4j makes it easy to name Loggers by software component. This can be accomplished by instantiating a Logger in 
+#   each class, with the logger name equal to the fully qualified name of the class. Since naming Loggers after 
+#   their owning class is such a common idiom, the convenience method LogManager.getLogger() is provided to automatically 
+#   use the calling class's fully qualified class name as the Logger name. 
+
+# LoggerConfig.  LoggerConfig objects are created when Loggers are declared in the logging configuration. The 
+#   LoggerConfig contains a set of Filters that must allow the LogEvent to pass before it will be passed to any 
+#   Appenders. It contains references to the set of Appenders that should be used to process the event.
+
+# Log Levels. LoggerConfigs will be assigned a Log Level. The set of built-in levels includes TRACE, DEBUG, INFO, WARN, 
+#    ERROR, and FATAL. Log4j 2 also supports custom log levels. 
+
+# Filter. In addition to the automatic log Level filtering that takes place as described in the previous section, 
+#   Log4j provides Filters that can be applied before control is passed to downstream components at various stages.
+
+# Appender.The ability to selectively enable or disable logging requests based on their logger is only part of the picture.
+#   Log4j allows logging requests to print to multiple destinations. In log4j speak, an output destination is called an
+#   Appender. Currently, appenders exist for the console, files, remote socket servers, Apache Flume, JMS, remote UNIX 
+#   Syslog daemons, and various database APIs. See the section on Appenders for more details on the various types 
+#   available. More than one Appender can be attached to a Logger. 
+# Each enabled logging request for a given logger will be forwarded to all the appenders in that Logger's LoggerConfig 
+#   as well as the Appenders of the LoggerConfig's parents. In other words, Appenders are inherited additively from 
+#   the LoggerConfig hierarchy. 
+# Appender Additivity.  The output of a log statement of Logger L will go to all the Appenders in the LoggerConfig 
+#   associated with L and the ancestors of that LoggerConfig. This is the meaning of the term "appender additivity". 
+
+# Layout. Used to customize the output format. This is accomplished by associating a Layout with an Appender. The Layout 
+#    is responsible for formatting the LogEvent according to the user's wishes, whereas an appender takes care of 
+#   sending the formatted output to its destination. The PatternLayout, part of the standard log4j distribution, lets 
+#   the user specify the output format according to conversion patterns similar to the C language printf function.
+# For example, the PatternLayout with the conversion pattern "%r [%t] %-5p %c - %m%n" will output something akin to: 
+176 [main] INFO  org.foo.Bar - Located nearest gas station.
+
+# Sample log4j.properties file
+hadoop.root.logger=INFO,console
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.target=System.err
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{2}: %m%n
+
+############
+# syslog - system logger
+
+# See 'man 3 syslog' for list of facilities and levels.
+
+# rsyslogd - Rsyslog is an open-source software utility used on UNIX and Unix-like computer systems for forwarding 
+#   log messages in an IP network. It implements the basic syslog protocol, extends it with content-based filtering,
+#   rich filtering capabilities, flexible configuration options and adds features such as using TCP for transport.
+
+## Sample /etc/rsyslogd.conf configuration to route facility/level messages:
+# This lets rsyslogd log all messages that come with either the info or the notice facility into the file 
+#   /var/log/messages, except for all messages that use the mail facility.
+*.=info;*.=notice;\
+mail.none /var/log/messages
+
+# This statement causes rsyslogd to log all messages that come with the info priority to the file /var/log/messages. 
+#   But any message coming either with the mail or the news facility will not be stored.
+*.=info;\
+mail,news.none /var/log/messages
+
+# Log anything of info level and above to /var/log/messages. Skip authpriv, mail, and cron facilities.
+*.info;mail.none,authpriv.none;mail.none /var/log/messages
+
+# Emergency messages will be displayed using wall
+*.=emerg *
+
+# Log all messages using kern facility to console
+kern.* /dev/console
+
+# KeyTrustee Install/Configure
+[root@keytrustee ~]$ vi CentOS-Base.repo 
+   Add "exclude=python-psycopg2*" to [base] section of CentOS-Base.repo
+
+sudo yum install http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-redhat93-9.3-1.noarch.rpm
+yum install keytrustee-server.x86_64 
+yum install haveged
+createuser --version # this should be run after you install keytrustee-server
+service haveged start
+chkconfig postgresql-9.3 on
+chkconfig keytrusteed on
+chkconfig postfix on
+
+# Fix entropy issue with vagrant VM:
+cat /proc/sys/kernel/random/entropy_avail
+sudo yum install rng-tools
+sudo vi /etc/sysconfig/rngd 
+   Add EXTRAOPTIONS="-r /dev/urandom"
+sudo /etc/init.d/rngd start
+   
+   
+
+[vagrant@keytrustee ~]$ sudo su - keytrustee
+[keytrustee@keytrustee ~]$ /usr/bin/ktadmin init --logdir /var/log/keytrustee
+echo "4096R/1C1932B7903092A6FAF4B6028A36CD7B3CDDD99B"
+/usr/bin/ktadmin --confdir /var/lib/keytrustee/.keytrustee db --port 11381 --bootstrap --pg-rootdir /var/lib/keytrustee/db
+logout
+[vagrant@keytrustee ~]$ sudo service keytrusteed start
+curl -sk https://$(hostname):11371/?a=fingerprint
+## Manually restart PostgreSQL
+sudo /usr/pgsql-9.3/bin/pg_ctl -D /var/lib/keytrustee/db start
+or
+sudo /usr/bin/ktadmin db --start --pg-rootdir /var/lib/keytrustee/db --background
+
+sudo /usr/lib/keytrustee-server/orgtool add -n cloudera -c yourname@cloudera.com
+sudo -u keytrustee /usr/lib/keytrustee-server/orgtool list
+Dropped privileges to keytrustee
+{
+    "cloudera": {
+        "auth_secret": "WUtZOPlrS17A5waY9PZFUA==",
+        "contacts": [
+            "yourname@cloudera.com"
+        ],
+        "creation": "2014-12-08T11:40:45",
+        "expiration": "9999-12-31T17:59:59",
+        "key_info": null,
+        "name": "cloudera",
+        "state": 0,
+        "uuid": "mCdVH7lheJy2QtXL5gyYXOfxMrTEgSQKs9DTi3WtwNC"
+    }
+}
+
+# Registering the navencrypt client
+sudo yum install navencrypt -y
+
+[vagrant@navencrypt ~]$ sudo navencrypt register -s keytrustee.cloudera.dev --org cloudera --auth Sv5aET90+JoUkLP9psirPQ== --skip-ssl-check
+sudo mkdir -pv /encrypt/storage /encrypt/mount
+sudo navencrypt-prepare /encrypt/storage /encrypt/mount
+df -hT
+mount| grep encrypt
+ls /secrets
+cat /secrets/secret-1
+sudo navencrypt-move encrypt @secrets /secrets /encrypt/mount
+ls -l /secrets
+cat /secrets/secret-39
+sudo ls /encrypt/storage/secrets/secrets/
+sudo strings /encrypt/storage/secrets/secrets/secret-39
+sudo file /encrypt/storage/secrets/secrets/secret-39
+sudo navencrypt acl --add --rule "ALLOW @secrets * /bin/cat"
+sudo navencrypt acl --list
+
+28  dmesg | grep crypt > /tmp/deny-messages
+vi /tmp/deny-messages # Edit/remove deny messages you don't care about
+# Generate ACL rules to allow access
+sudo navencrypt deny2allow /tmp/deny-messages 
+sudo navencrypt acl --add --rule "ALLOW @secrets * /usr/bin/less" # Add the ACL rules
+sudo less /secrets/secret-39
+
+sudo navencrypt acl --list
+sudo navencrypt acl --del --line 2  # Delete an ACL rule by number
+
+# Generate an ACL for a process
+[vagrant@navencrypt ~]$ ps -ef | grep ntpd | grep -v grep
+ntp       1217     1  0 17:21 ?        00:00:00 ntpd -u ntp:ntp -p /var/run/ntpd.pid -g
+sudo navencrypt-profile -p 1217 > /tmp/ntpd_profile.txt
+which ntpd
+sudo navencrypt acl --add --rule "ALLOW @ntpd * /usr/sbin/ntpd" --profile-file=/tmp/ntpd_profile.txt 
+sudo navencrypt acl --list --all # Use --all option to --list to see ACL rules for process profiles
+sudo navencrypt acl --update  # Update fingerprints for binaries that have changed
+
+
+   

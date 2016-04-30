@@ -1,0 +1,37 @@
+
+==================================================vvv
+2/12/2016 Reports errors in HDFS logs. "DataXceiver error processing WRITE_BLOCK operation" and "Slow BlockReceiver write packet to mirror"
+<timestamp> ERROR org.apache.hadoop.hdfs.server.datanode.DataNode: <host>:<port>:DataXceiver error processing WRITE_BLOCK operation src: <host>:<port> dst: <host>:<port> 
+at org.apache.hadoop.net.SocketIOWithTimeout.doIO(SocketIOWithTimeout.java:164) 
+at org.apache.hadoop.net.SocketInputStream.read(SocketInputStream.java:161) 
+
+Log entries also include: 
+
+<timestamp> WARN org.apache.hadoop.hdfs.server.datanode.DataNode: Slow BlockReceiver write packet to mirror took <n>ms (threshold=300ms) 
+----------------
+Possible configuration Settings to look at:
+<BACKGROUND> the errors are produced during heavy-write MapReduce workloads, another option may be that there is contention on the DataNode themselves. Contention may be caused by many threads within the JVM running in parallel or too much demand on the local hard drives. It is possible that the local disks cannot service the requests fast enough and disk writes begin to queue up until these warning start to appear.
+
+If you also see "Replica not found" exception was created, it can often be attributed to an improper value set for the configuration item:
+
+mapreduce.client.submit.file.replication
+
+Other configurations, dealing with threads, to look at are:
+
+dfs.datanode.handler.count
+dfs.datanode.max.transfer.threads
+
+==================================================^^^
+
+==================================================vvv
+2/12/2016 CM CLock Offset Health Check
+Note: as of OPSAPS-25653 in C5.4.1 
+> agent will performs an ntpdc -np and parse the output looking for left margin that start with '*' [1] 
+> if line start with '=' [2] or anything else, it will send back to CM ntpStatus: 3 (NTP_STATUS_NOT_SYNCHRONIZED) [3] 
+> we added debug code that Chris Leroy provided [4] 
+> We confirmed that their ntpdc -np is flapping from * to = 
+
+The character in the left margin indicates the mode this peer entry is operating in. 
+= means the remote server is being polled in client mode 
+* marks the peer the server is currently synchronizing to. 
+==================================================^^^

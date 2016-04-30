@@ -1,0 +1,14 @@
+## YARN Configuration
+
+Inventory the vcores, memory, and disks available on each worker node
+# Calculate the resources needed for other processes
+– Reserve 3GB or 20% of total memory for the OS
+– Reserve resources for any non-Hadoop applicaFons
+– Reserve resources for other any Hadoop components
+– HDFS caching (if configured), NodeManager, DataNode
+– Impalad, HBase RegionServer, Solr, etc.
+# Grant the resources not used by the above to your YARN containers
+# Configure the YARN scheduler and application framework settings
+– Based on the worker node profile determined above
+– Determine the number of containers needed to best support YARN applicaFons based on the type of workload
+– Monitor usage and tune esFmated values to find optimal settings
