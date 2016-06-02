@@ -114,8 +114,17 @@ hadoop-<user-running-hadoop>-<daemon>-<hostname>.log
 /var/run/cloudera-scm-agent/process/<pid>-keytrustee-KMS_KEYTRUSTEE/logs/
 /var/log/kms-keytrustee/
 
-
-
+Cloudera Manager/CDH:
+Configuring custom java home via: CM -> Hosts -> Advanced -> Java Home Directory  
+For CM, JAVA_HOME is set in /etc/defaults/cloudera-scm-server when you want to run a new JDK.  Node JDKs are stored via the 
+   setting in CM.  CM then pushes the updated config out to all the Agents the next time the agent checks in, but the agent 
+   doesn't use the new JDK until the agent is restarted on each box.  The agent is the process that starts all other processes 
+   on the box, so until the agent is restated on each host it will continue to use the old JDK.
+Please note that the supervisord (which supervises all running processes) doesn't restart as part of the agent.  It is sometimes
+   required to run "sudo service cloudera-scm-agent clean_restart_confirmed" to restart the agent *and* supervisord to get settings
+   to propagate properly.  Running "sudo service cloudera-scm-agent clean_restart_confirmed" will take down all services on the
+   cluster, and you'll want to run it after stopping all other cluster services.
+/usr/lib64/cmf/service/mgmt/java_location.sh is executed to find a valid JDK and it should short circuit if JAVA_HOME is set.
 
 Beeline:
 # Use Cloudera Impala JDBC driver to connect to Impala via beeline examples
