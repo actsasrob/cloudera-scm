@@ -126,6 +126,30 @@ Please note that the supervisord (which supervises all running processes) doesn'
    cluster, and you'll want to run it after stopping all other cluster services.
 /usr/lib64/cmf/service/mgmt/java_location.sh is executed to find a valid JDK and it should short circuit if JAVA_HOME is set.
 
+# How CM sends configuration updates to Agents. How environment variables are passed to CDH services:
+1) A cluster-related configuration update is made in CM. e.g. configuring a custom Java home.
+2) The CM agents check in with CM when they heartbeat. Along with this the agents pass along the state of the server.
+3) CM replies with new configuration updates and with instructions "Here's what you should be doing".
+4) The agents store cluster-related configuration updates in the appropriate configuration files in 
+   /var/run/cloudera-scm-agent/supervisor/include/*.conf
+   Those configuration updates will get applied the next time the associated services/role gets restarted.
+   The supervisord process reads the configuration files in /var/run/cloudera-scm-agent/supervisor/include/*.conf. 
+   supervisord uses the information in the configuration files to start/restart services/roles.
+5) When stop/start/restart a service/role via CM, CM tells the agent, during the next heartbeat, to perform the associated action.
+   The agent in-turn communicates with supervisord to perform the stop/start/restart.
+   supervisord continually monitors all processes it starts. Most processes are configured to autostart. In that case supervisord
+   will also automatically restart processes when they exit.
+   
+   The configuration files in /var/run/cloudera-scm-agent/supervisor/include/*.conf for each program can also contain environment variables that should be set when the associated process is started.
+
+The CDH scripts for starting up various services, that require Java, source this configuration file 
+  /usr/lib64/cmf/service/common/cloudera-config.sh and then invoke the locate_java_home function to find the JDK to use. The
+  function sets JAVA_HOME as a side-effect.
+The /usr/lib64/cmf/service/mgmt/java_location.sh script does basically the same thing.
+One important note, if the JAVA_HOME environment variable is set the locate_java_home function will short circuit and use 
+  whatever JAVA_HOME points to. That's what is supposed to happen when you set a custom Java Home via Cloudera Manager.
+
+
 Beeline:
 # Use Cloudera Impala JDBC driver to connect to Impala via beeline examples
 1) Unzip the Cloudera Impala JDBC zip file.
